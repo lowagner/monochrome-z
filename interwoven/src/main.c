@@ -2,6 +2,18 @@
 
 #include <stdlib.h> // rand
 
+#define DATA3(type1, name1, init1, type2, name2, init2, type3, name3, init3, struct_name) \
+    struct struct_name { \
+        type1 name1; \
+        type2 name2; \
+        type3 name3; \
+    } \
+    struct_name = { \
+        .name1 = init1, \
+        .name2 = init2, \
+        .name3 = init3, \
+    }
+
 #define DATA4(type1, name1, init1, type2, name2, init2, type3, name3, init3, type4, name4, init4, struct_name) \
     struct struct_name { \
         type1 name1; \
@@ -32,6 +44,13 @@ DATA4(
     title
 );
 
+DATA3(
+    PDButtons, current, 0,
+    PDButtons, pushed, 0,
+    PDButtons, released, 0,
+    buttons
+);
+
 int update(void *user_data);
 
 int initialize(PlaydateAPI *pd) {
@@ -52,16 +71,28 @@ int update(void *user_data) {
     int title_length = strlen(title.value);
     pd->graphics->drawText(title.value, title_length, kASCIIEncoding, title.x, title.y);
     int arbitrary_time = pd->system->getCurrentTimeMilliseconds() / 700;
-    if (arbitrary_time == title.last_jump) {
-        return 1;
+    if (arbitrary_time != title.last_jump) {
+        title.last_jump = arbitrary_time;
+        unsigned int random = rand();
+        title.x += 8 * (-1 + 2 * (random & 1));
+        title.y += 5 * (-1 + 2 * ((random >> 1) & 1));
     }
-    title.last_jump = arbitrary_time;
-    unsigned int random = rand();
-    title.x += 8 * (-1 + 2 * (random & 1));
+    pd->system->getButtonState(&buttons.current, &buttons.pushed, &buttons.released);
+    if (buttons.current & kButtonLeft) {
+        title.x -= 5;
+    }
+    if (buttons.current & kButtonRight) {
+        title.x += 5;
+    }
+    if (buttons.current & kButtonUp) {
+        title.y -= 5;
+    }
+    if (buttons.current & kButtonDown) {
+        title.y += 5;
+    }
     if (title.x < 0 || title.x >= LCD_COLUMNS - title_length * font.width) {
         title.x = LCD_COLUMNS / 2;
     }
-    title.y += 5 * (-1 + 2 * ((random >> 1) & 1));
     if (title.y < 0 || title.y >= LCD_ROWS - font.height) {
         title.y = LCD_ROWS / 2;
     }
@@ -77,7 +108,10 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t argument) {
             initialize(pd);
             break;
         case kEventKeyPressed:
-            (void)argument; // TODO: use for event = kEventKeyPressed
+            pd->system->logToConsole("key press %d", argument);
+            break;
+        case kEventKeyReleased:
+            pd->system->logToConsole("key release %d", argument);
             break;
     }
     return 0;
