@@ -74,8 +74,8 @@ int update(void *user_data) {
     if (arbitrary_time != title.last_jump) {
         title.last_jump = arbitrary_time;
         unsigned int random = rand();
-        title.x += 8 * (-1 + 2 * (random & 1));
-        title.y += 5 * (-1 + 2 * ((random >> 1) & 1));
+        title.x += 4 * (-3 + 2 * (random & 3)); // -3 + 2 * (0, 1, 2, 3) -> (-3, -1, 1, 3)
+        title.y += 2 * (-3 + 2 * ((random >> 2) & 3));
     }
     pd->system->getButtonState(&buttons.current, &buttons.pushed, &buttons.released);
     if (buttons.current & kButtonLeft) {
@@ -91,10 +91,10 @@ int update(void *user_data) {
         title.y += 5;
     }
     if (title.x < 0 || title.x >= LCD_COLUMNS - title_length * font.width) {
-        title.x = LCD_COLUMNS / 2;
+        title.x = (LCD_COLUMNS - title_length * font.width) / 2;
     }
     if (title.y < 0 || title.y >= LCD_ROWS - font.height) {
-        title.y = LCD_ROWS / 2;
+        title.y = (LCD_ROWS - font.height) / 2;
     }
     return 1;
 }
