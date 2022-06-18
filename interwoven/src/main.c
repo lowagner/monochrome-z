@@ -26,10 +26,13 @@ int initialize() {
     font_load("/System/Fonts/Asheville-Sans-14-Bold.pft");
 }
 
-int default_update() {
-    playdate->graphics->clear(kColorWhite);
+void default_update(display_slice slice) {
+    display_clear(slice, 0);
+    // TODO: push this logic into a display_text() method
     int title_length = strlen(title.value);
-    playdate->graphics->drawText(title.value, title_length, kASCIIEncoding, title.x, title.y);
+    if (title.y >= slice.start_row && title.y + font.height <= slice.end_row) {
+        playdate->graphics->drawText(title.value, title_length, kASCIIEncoding, title.x, title.y);
+    }
     int arbitrary_time = playdate->system->getCurrentTimeMilliseconds() / 700;
     if (arbitrary_time != title.last_jump) {
         title.last_jump = arbitrary_time;
@@ -56,7 +59,6 @@ int default_update() {
     if (title.y < 0 || title.y >= LCD_ROWS - font.height) {
         title.y = (LCD_ROWS - font.height) / 2;
     }
-    return 1;
 }
 
 #ifdef _WINDLL

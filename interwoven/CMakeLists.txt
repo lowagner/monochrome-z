@@ -3,6 +3,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../CMakeLists.txt)
 
 set(NEEDED_LIBRARIES
     data
+    display
     font
     playdate
     runtime
