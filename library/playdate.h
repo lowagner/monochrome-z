@@ -4,4 +4,4 @@
 
 extern PlaydateAPI *playdate;
 
-void playdate_init(PlaydateAPI *_playdate, PDCallbackFunction *update_callback);
+void playdate_init(PlaydateAPI *_playdate);

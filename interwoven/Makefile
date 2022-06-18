@@ -1,7 +1,7 @@
 .ONESHELL:
 .PHONY: run
 # TODO: come up with a better way to share libs between CMakeLists.txt and here.
-%: export PD_PROJECT_LIBS=data font playdate
+%: export PD_PROJECT_LIBS=data font playdate runtime
 %: export PD_PROJECT_NAME=$(shell basename $(shell pwd))
 
 run: Source

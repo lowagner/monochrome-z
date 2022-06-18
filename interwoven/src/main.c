@@ -3,6 +3,7 @@
 #include "../../library/data.h"
 #include "../../library/font.h"
 #include "../../library/playdate.h"
+#include "../../library/runtime.h"
 
 #include <stdlib.h> // rand
 
@@ -21,15 +22,11 @@ DATA3(
     buttons
 );
 
-int update(void *user_data);
-
-int initialize(PlaydateAPI *pd) {
-    playdate_init(pd, update);
-
+int initialize() {
     font_load("/System/Fonts/Asheville-Sans-14-Bold.pft");
 }
 
-int update(void *) {
+int default_update() {
     playdate->graphics->clear(kColorWhite);
     int title_length = strlen(title.value);
     playdate->graphics->drawText(title.value, title_length, kASCIIEncoding, title.x, title.y);
@@ -68,7 +65,8 @@ __declspec(dllexport)
 int eventHandler(PlaydateAPI *pd, PDSystemEvent event, uint32_t argument) {
     switch (event) {
         case kEventInit:
-            initialize(pd);
+            playdate_init(pd);
+            initialize();
             break;
         case kEventKeyPressed:
             pd->system->logToConsole("key press %d", argument);

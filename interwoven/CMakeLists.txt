@@ -1,15 +1,16 @@
 cmake_minimum_required(VERSION 3.14)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../CMakeLists.txt)
 
-# Game Name Customization
-set(PLAYDATE_GAME_NAME $ENV{PD_PROJECT_NAME})
-set(PLAYDATE_GAME_DEVICE ${PLAYDATE_GAME_NAME}_DEVICE)
-
 set(NEEDED_LIBRARIES
     data
     font
     playdate
+    runtime
 )
+
+# Game Name Customization
+set(PLAYDATE_GAME_NAME $ENV{PD_PROJECT_NAME})
+set(PLAYDATE_GAME_DEVICE ${PLAYDATE_GAME_NAME}_DEVICE)
 
 set(NEEDED_LIBRARIES_H)
 set(NEEDED_LIBRARIES_C)
