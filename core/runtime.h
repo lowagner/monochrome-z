@@ -20,3 +20,5 @@ extern struct runtime runtime;
 
 // You should define this in your main.c (or elsewhere).
 void default_update(display_slice slice);
+// You should also define this in your main.c (or elsewhere).
+void initialize();

@@ -53,3 +53,22 @@ static int update_mode(int mode, display_slice slice) {
             return 1;
     }
 }
+
+#ifdef _WINDLL
+__declspec(dllexport)
+#endif
+int eventHandler(PlaydateAPI *pd, PDSystemEvent event, uint32_t argument) {
+    switch (event) {
+        case kEventInit:
+            playdate_init(pd);
+            initialize();
+            break;
+        case kEventKeyPressed:
+            pd->system->logToConsole("key press %d", argument);
+            break;
+        case kEventKeyReleased:
+            pd->system->logToConsole("key release %d", argument);
+            break;
+    }
+    return 0;
+}

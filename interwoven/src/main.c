@@ -10,7 +10,7 @@ DATA4(
     title
 );
 
-int initialize() {
+void initialize() {
     font_load("/System/Fonts/Asheville-Sans-14-Bold.pft");
 }
 
@@ -46,23 +46,4 @@ void default_update(display_slice slice) {
     if (title.y < 0 || title.y >= LCD_ROWS - font.height) {
         title.y = (LCD_ROWS - font.height) / 2;
     }
-}
-
-#ifdef _WINDLL
-__declspec(dllexport)
-#endif
-int eventHandler(PlaydateAPI *pd, PDSystemEvent event, uint32_t argument) {
-    switch (event) {
-        case kEventInit:
-            playdate_init(pd);
-            initialize();
-            break;
-        case kEventKeyPressed:
-            pd->system->logToConsole("key press %d", argument);
-            break;
-        case kEventKeyReleased:
-            pd->system->logToConsole("key release %d", argument);
-            break;
-    }
-    return 0;
 }
