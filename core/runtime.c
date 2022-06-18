@@ -8,11 +8,11 @@ static int update_mode(int mode, display_slice slice);
 
 struct runtime runtime = {
     .update = update,
-    .next_mode = 0,
+    .next_mode = kRuntimeModeNone,
     .transition = 0,
 };
 
-static int runtime_mode = -1;
+static int runtime_mode = kRuntimeModeWipe;
 
 static int update(void *) {
     buttons_update();
@@ -22,24 +22,38 @@ static int update(void *) {
             runtime.transition = 0;
             runtime_mode = runtime.next_mode;
             playdate->system->logToConsole("finished transition");
-        } else {
-            update_mode(runtime.next_mode, (display_slice){
-                .start_row = 0,
-                .end_row = runtime.transition,
-            });
+            goto no_transition_update;
         }
+        // in case someone modifies runtime.transition in an update,
+        // make sure to use a consistent one for both display slices:
+        int runtime_transition = runtime.transition;
+        update_mode(runtime.next_mode, (display_slice){
+            .start_row = 0,
+            .end_row = runtime_transition - 2,
+        });
+        update_mode(runtime_mode, (display_slice){
+            .start_row = runtime_transition,
+            .end_row = LCD_ROWS,
+        });
+        // draw a line between the modes:
+        display_clear(255, (display_slice){
+            .start_row = runtime_transition - 2,
+            .end_row = runtime_transition,
+        });
+    } else {
+        no_transition_update:
+        update_mode(runtime_mode, (display_slice){
+            .start_row = 0,
+            .end_row = LCD_ROWS,
+        });
     }
-    update_mode(runtime_mode, (display_slice){
-        .start_row = runtime.transition,
-        .end_row = LCD_ROWS,
-    });
 }
 
 static int update_mode(int mode, display_slice slice) {
     switch (mode) {
         // TODO: make this a "wipe" mode, which switches back to a "runtime.return_mode"
-        case -1:
-            display_clear(slice, 85);
+        case kRuntimeModeWipe:
+            display_clear(85, slice);
             return 1;
         // TODO: define these in the .h files, so they're automatically
         // pulled in when adding game/runtime modes.

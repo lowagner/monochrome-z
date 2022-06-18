@@ -15,7 +15,7 @@ void initialize() {
 }
 
 void default_update(display_slice slice) {
-    display_clear(slice, 0);
+    display_clear(0, slice);
     // TODO: push this logic into a display_text() method
     int title_length = strlen(title.value);
     if (title.y >= slice.start_row && title.y + font.height <= slice.end_row) {

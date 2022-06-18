@@ -6,7 +6,7 @@
 
 #define ROW_STRIDE 52
 
-void display_clear(display_slice slice, uint8_t bg_color) {
+void display_clear(uint8_t bg_color, display_slice slice) {
     if (slice.start_row >= slice.end_row) {
         return;
     }

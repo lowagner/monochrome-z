@@ -18,6 +18,11 @@ extern struct runtime runtime;
 
 // TODO: add enum for different runtime modes
 
+enum runtime_mode {
+    kRuntimeModeNone = 0,
+    kRuntimeModeWipe = -1,
+};
+
 // You should define this in your main.c (or elsewhere).
 void default_update(display_slice slice);
 // You should also define this in your main.c (or elsewhere).
