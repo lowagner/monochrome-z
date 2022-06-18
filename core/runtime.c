@@ -9,34 +9,33 @@ static int update_mode(int mode, display_slice slice);
 struct runtime runtime = {
     .update = update,
     .next_mode = 0,
+    .transition = 0,
 };
 
 static int runtime_mode = -1;
-static int runtime_transition = 0;
 
 static int update(void *) {
     buttons_update();
     if (runtime.next_mode != runtime_mode) {
-        runtime_transition += 6;
-        if (runtime_transition >= LCD_ROWS) {
-            runtime_transition = 0;
+        runtime.transition += 6;
+        if (runtime.transition >= LCD_ROWS) {
+            runtime.transition = 0;
             runtime_mode = runtime.next_mode;
             playdate->system->logToConsole("finished transition");
         } else {
             update_mode(runtime.next_mode, (display_slice){
                 .start_row = 0,
-                .end_row = runtime_transition,
+                .end_row = runtime.transition,
             });
         }
     }
     update_mode(runtime_mode, (display_slice){
-        .start_row = runtime_transition,
+        .start_row = runtime.transition,
         .end_row = LCD_ROWS,
     });
 }
 
 static int update_mode(int mode, display_slice slice) {
-    // TODO: update buttons here
     switch (mode) {
         // TODO: make this a "wipe" mode, which switches back to a "runtime.return_mode"
         case -1:

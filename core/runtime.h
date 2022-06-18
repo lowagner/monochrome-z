@@ -7,6 +7,9 @@ struct runtime {
     int (*const update)(void *);
     // set this if your mode wants to transition to a different mode.
     int next_mode;
+    // you probably shouldn't adjust this yourself unless you know what
+    // you're doing, but you can read it:
+    int transition;
     // TODO: mode_transition for how we should transition
 };
 
