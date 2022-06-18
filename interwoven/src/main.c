@@ -10,13 +10,6 @@ DATA4(
     title
 );
 
-DATA3(
-    PDButtons, current, 0,
-    PDButtons, pushed, 0,
-    PDButtons, released, 0,
-    buttons
-);
-
 int initialize() {
     font_load("/System/Fonts/Asheville-Sans-14-Bold.pft");
 }
@@ -35,7 +28,6 @@ void default_update(display_slice slice) {
         title.x += 4 * (-3 + 2 * (random & 3)); // -3 + 2 * (0, 1, 2, 3) -> (-3, -1, 1, 3)
         title.y += 2 * (-3 + 2 * ((random >> 2) & 3));
     }
-    playdate->system->getButtonState(&buttons.current, &buttons.pushed, &buttons.released);
     if (buttons.current & kButtonLeft) {
         title.x -= 5;
     }

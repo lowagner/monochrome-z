@@ -1,5 +1,6 @@
 #include "runtime.h"
 
+#include "buttons.h"
 #include "playdate.h"   // for LCD_ROWS
 
 static int update(void *);
@@ -14,6 +15,7 @@ static int runtime_mode = -1;
 static int runtime_transition = 0;
 
 static int update(void *) {
+    buttons_update();
     if (runtime.next_mode != runtime_mode) {
         runtime_transition += 6;
         if (runtime_transition >= LCD_ROWS) {
