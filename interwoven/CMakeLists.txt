@@ -2,11 +2,6 @@ cmake_minimum_required(VERSION 3.14)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../CMakeLists.txt)
 
 set(NEEDED_LIBRARIES
-    data
-    display
-    font
-    playdate
-    runtime
 )
 
 # Game Name Customization
@@ -23,10 +18,10 @@ foreach(Lib IN ITEMS ${NEEDED_LIBRARIES})
     list(APPEND NEEDED_LIBRARIES_C ${LibC}) 
 endforeach()
 
-file(GLOB SOURCES_H src/*.h ${NEEDED_LIBRARIES_H})
+file(GLOB SOURCES_H src/*.h ${NEEDED_LIBRARIES_H} ../core/*.h)
 
 # TODO: add test.h
-file(GLOB SOURCES src/*.c ${SOURCES_H} ${NEEDED_LIBRARIES_C})
+file(GLOB SOURCES src/*.c ${NEEDED_LIBRARIES_C} ../core/*.c ${SOURCES_H})
 
 project(${PLAYDATE_GAME_NAME} C ASM)
 

@@ -17,7 +17,7 @@ endif
 VPATH += src
 
 # List C source files here
-SRC = src/*.c $(addsuffix .c, $(addprefix ../library/, ${PD_PROJECT_LIBS}))
+SRC = src/*.c ../core/*.c $(addsuffix .c, $(addprefix ../library/, ${PD_PROJECT_LIBS}))
 
 # List all user directories here
 UINCDIR = 

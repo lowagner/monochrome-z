@@ -1,9 +1,4 @@
-#include "pd_api.h"
-
-#include "../../library/data.h"
-#include "../../library/font.h"
-#include "../../library/playdate.h"
-#include "../../library/runtime.h"
+#include "../../core/core.h"
 
 #include <stdlib.h> // rand
 
