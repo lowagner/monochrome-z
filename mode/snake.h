@@ -2,15 +2,39 @@
 #define MODE_SNAKE
 
 #include "../core/display.h"
+#include "../core/lfsr.h"
+
+#include <stdint.h>
+
+enum snake_direction {
+    kSnakeDirectionRight,
+    kSnakeDirectionUp,
+    kSnakeDirectionLeft,
+    kSnakeDirectionDown,
+};
+
+typedef struct snake_piece {
+    int x;          // 0 to 399 makes sense
+    int y;          // 0 to 239 makes sense
+    uint32_t lfsr;  // for use with dizziness
+    uint8_t direction;  // use snake_direction enum
+}
+    snake_piece;
 
 struct snake {
-    int head_x, head_y;
-    int direction;
+    snake_piece head;
+    snake_piece tail;
+    int half_size;
     int dizziness;
+    int apple_x, apple_y;
+    int game_over;
+    uint64_t score;
 };
 
 extern struct snake snake;
 
+void snake_initialize();
+void snake_reset();
 void snake_update(display_slice slice);
 
 #endif
