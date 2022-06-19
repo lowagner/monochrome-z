@@ -1,3 +1,4 @@
+#include "modes.h"
 #include "../../core/core.h"
 
 #include <stdlib.h> // rand
@@ -45,5 +46,8 @@ void default_update(display_slice slice) {
     }
     if (title.y < 0 || title.y >= LCD_ROWS - font.height) {
         title.y = (LCD_ROWS - font.height) / 2;
+    }
+    if (runtime.transition.counter == 0) {
+        runtime.transition.next_mode = kRuntimeModeSnake;
     }
 }

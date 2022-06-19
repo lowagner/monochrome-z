@@ -2,6 +2,7 @@
 .PHONY: run
 # TODO: come up with a better way to share libs between CMakeLists.txt and here.
 %: export PD_PROJECT_LIBS=
+%: export PD_PROJECT_MODES=snake
 %: export PD_PROJECT_NAME=$(shell basename $(shell pwd))
 
 run: Source

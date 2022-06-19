@@ -14,10 +14,12 @@ endif
 # ex: VPATH += src1:src2
 ######
 
-VPATH += src
+VPATH += src ../library ../mode
 
 # List C source files here
-SRC = src/*.c ../core/*.c $(addsuffix .c, $(addprefix ../library/, ${PD_PROJECT_LIBS}))
+SRC = src/*.c ../core/*.c
+SRC += $(addsuffix .c, $(addprefix ../library/, ${PD_PROJECT_LIBS}))
+SRC += $(addsuffix .c, $(addprefix ../mode/, ${PD_PROJECT_MODES}))
 
 # List all user directories here
 UINCDIR = 
@@ -26,7 +28,9 @@ UINCDIR =
 UASRC = 
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS = 
+# TODO! NOTE! you need to make a change to the sdk buildsupport/common.mk file currently:
+# see https://devforum.play.date/t/not-using-udefs-in-makefile-rule-objdir-pdex-dylib-ext-objdir/7060
+UDEFS = -DPD_PROJECT_MODES=../${PD_PROJECT_NAME}/src/modes.h
 
 # Define ASM defines here
 UADEFS = 

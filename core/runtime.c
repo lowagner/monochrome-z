@@ -1,5 +1,10 @@
 #include "runtime.h"
 
+#include "data.h"
+
+// need to ensure we grab the modes that we want, so that their MODE_X macros are defined
+// for later in our update(void *) function.
+#include STRINGIFY(PD_PROJECT_MODES)
 #include "buttons.h"
 #include "playdate.h"   // for LCD_ROWS
 
@@ -90,11 +95,9 @@ static void update_mode(int mode, display_slice slice) {
         case kRuntimeModeWipe:
             display_clear(85, slice);
             return;
-        // TODO: define these in the .h files, so they're automatically
-        // pulled in when adding game/runtime modes.
-        #ifdef SOME_RUNTIME_MODE
-        case some_runtime_mode:
-            some_runtime_update(slice);
+        #ifdef MODE_SNAKE
+        case kRuntimeModeSnake:
+            snake_update(slice);
             return;
         #endif
         default:

@@ -5,6 +5,8 @@
 enum runtime_mode {
     kRuntimeModeWipe = -1,
     kRuntimeModeNone = 0,
+    // TODO: ModeMenu
+    kRuntimeModeSnake,
 };
 
 struct runtime {
