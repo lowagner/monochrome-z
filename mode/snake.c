@@ -8,5 +8,5 @@ struct snake snake = {
 };
 
 void snake_update(display_slice slice) {
-    display_clear(100, slice);
+    display_clear(0, slice);
 }

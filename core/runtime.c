@@ -1,10 +1,5 @@
 #include "runtime.h"
 
-#include "data.h"
-
-// need to ensure we grab the modes that we want, so that their MODE_X macros are defined
-// for later in our update(void *) function.
-#include STRINGIFY(PD_PROJECT_MODES)
 #include "buttons.h"
 #include "playdate.h"   // for LCD_ROWS
 

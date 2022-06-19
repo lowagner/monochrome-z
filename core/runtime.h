@@ -1,12 +1,19 @@
 #pragma once
 
+#include "data.h"
 #include "display.h"
+
+// need to ensure we grab the modes that we want, so that their MODE_X macros are defined
+// for later in our update(void *) function.
+#include STRINGIFY(PD_PROJECT_MODES)
 
 enum runtime_mode {
     kRuntimeModeWipe = -1,
     kRuntimeModeNone = 0,
     // TODO: ModeMenu
+    #ifdef MODE_SNAKE
     kRuntimeModeSnake,
+    #endif
 };
 
 struct runtime {
