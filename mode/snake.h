@@ -26,7 +26,13 @@ struct snake {
     snake_piece tail;
     int half_size;
     int dizziness;
-    int apple_x, apple_y;
+    int counter;
+    int inverse_speed;
+    struct {
+        int x, y;
+        display_box box;
+    }
+        apple;
     int game_over;
     uint64_t score;
 };
