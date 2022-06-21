@@ -12,6 +12,11 @@ DATA4(
 );
 
 void initialize() {
+    // TODO: better way of adding these tests programatically
+    #ifndef NDEBUG
+    test__core__display();
+    test__core__error();
+    #endif
     font_load("/System/Fonts/Asheville-Sans-14-Bold.pft");
 }
 
