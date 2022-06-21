@@ -3,6 +3,7 @@
 #include <string.h>
 
 #define ERROR_BUFFER_SIZE 4096
+// TODO: replace with __VA_ARGS__
 #define AND ,
 #define _AND AND
 #define __AND _AND
@@ -31,21 +32,21 @@
 #define ASSERT(X) _ASSERT(playdate->system->error, X)
 #define ASSERT_LOGGED(X) _ASSERT(error_log, X)
 
-#define _TEST_WITH_CONTEXT(e, contextFormat, contextData, x) DEBUG_ONLY({ \
+#define _TEST_WITH_CONTEXT(e, x, contextFormat, ...) DEBUG_ONLY({ \
     ++error_test_only; \
     x; \
     { \
         const char *error = error_pull(); \
         if (error[0] != 0) { \
-            e(contextFormat ": %s" __AND contextData __AND error); \
+            e(contextFormat ": %s", __VA_ARGS__, error); \
         } \
     } \
     --error_test_only; \
 })
-#define TEST_WITH_CONTEXT(contextFormat, contextData, x) \
-    _TEST_WITH_CONTEXT(playdate->system->error, contextFormat, contextData, x)
-#define TEST_WITH_CONTEXT_LOGGED(contextFormat, contextData, x) \
-    _TEST_WITH_CONTEXT(error_log, contextFormat, contextData, x)
+#define TEST_WITH_CONTEXT(x, contextFormat, ...) \
+    _TEST_WITH_CONTEXT(playdate->system->error, x, contextFormat, __VA_ARGS__)
+#define TEST_WITH_CONTEXT_LOGGED(x, contextFormat, ...) \
+    _TEST_WITH_CONTEXT(error_log, x, contextFormat, __VA_ARGS__)
 
 #define TEST(x) DEBUG_ONLY({ \
     ++error_test_only; \

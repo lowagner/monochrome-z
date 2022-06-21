@@ -84,8 +84,10 @@ void test__core__error() {
         "at i = 9: at i = 8: expected i != 8",
         for (int i = 0; i < 10; ++i) {
             TEST_WITH_CONTEXT_LOGGED(
-                "at i = %d", i,
-                ASSERT_LOGGED(i != 8);
+                {
+                    ASSERT_LOGGED(i != 8);
+                },
+                "at i = %d", i
             );
         }
     );
