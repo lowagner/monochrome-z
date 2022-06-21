@@ -25,6 +25,3 @@
         .name3 = init3, \
         .name4 = init4, \
     }
-
-#define STRINGIFY(X) _STRINGIFY(X)
-#define _STRINGIFY(X) #X

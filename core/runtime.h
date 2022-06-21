@@ -1,7 +1,7 @@
 #pragma once
 
-#include "data.h"
 #include "display.h"
+#include "error.h"
 
 // need to ensure we grab the modes that we want, so that their MODE_X macros are defined
 // for later in our update(void *) function.
