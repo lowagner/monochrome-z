@@ -16,6 +16,7 @@ void initialize() {
     #ifndef NDEBUG
     test__core__display();
     test__core__error();
+    test__mode__snake();
     #endif
     font_load("/System/Fonts/Asheville-Sans-14-Bold.pft");
 }

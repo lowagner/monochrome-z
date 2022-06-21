@@ -193,3 +193,14 @@ static int snake_add_apple() {
     // TODO
     return 0;
 }
+
+#ifndef NDEBUG
+void test__mode__snake() {
+    TEST(
+        display_clear(0, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
+        // TODO
+        {},
+        "%s: can draw a snake piece right", AT
+    );
+}
+#endif

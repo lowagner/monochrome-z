@@ -38,7 +38,7 @@ void error_log_variable(const char *format, va_list variable_arguments) {
     }
 }
 
-void error(const char *format, ...) {
+void error_die(const char *format, ...) {
     va_list variable_arguments;
     va_start(variable_arguments, format);
     error_log_variable(format, variable_arguments);
@@ -69,27 +69,34 @@ void test__core__error() {
     TEST(
         EXPECT_INT_EQUAL(1, 1);
         EXPECT_INT_EQUAL(15, 15);
+        {},
+        "%s: basic integer-equals works correctly", AT
     );
 
-    EXPECT_ERROR("a = 7 != b = 8",
-        int a = 7;
-        int b = 8;
-        EXPECT_INT_EQUAL_LOGGED(a, b);
+    TEST(
+        EXPECT_ERROR_LOGGED(
+            int a = 7;
+            int b = 8;
+            EXPECT_INT_EQUAL_LOGGED(a, b),
+            "a = 7 != b = 8"
+        ),
+        "%s: basic integer-equals errors correctly", AT
     );
 
-    EXPECT_ERROR(
-        // not ideal, but we're logging the error at i = 8
-        // and i = 9 knows there's an existing error so adds to it.
-        // normally you wouldn't do a LOGGED test here, you'd just die.
-        "at i = 9: at i = 8: expected i != 8",
-        for (int i = 0; i < 10; ++i) {
-            TEST_WITH_CONTEXT_LOGGED(
-                {
-                    ASSERT_LOGGED(i != 8);
-                },
-                "at i = %d", i
-            );
-        }
+    TEST(
+        EXPECT_ERROR_LOGGED(
+            for (int i = 0; i < 10; ++i) {
+                TEST_LOGGED(
+                    ASSERT_LOGGED(i != 8),
+                    "at i = %d", i
+                );
+            },
+            // not ideal, but we're logging the error at i = 8
+            // and i = 9 knows there's an existing error so adds to it.
+            // normally you wouldn't do a LOGGED test here, you'd just die.
+            "at i = 9: at i = 8: expected i != 8"
+        ),
+        "%s: TEST_LOGGED works correctly", AT
     );
 }
 #endif

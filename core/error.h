@@ -8,10 +8,9 @@
 #define _AND AND
 #define __AND _AND
 #define AT __FILE__ ":" STRINGIFY(__LINE__)
-// may or may not crash the program, depending on test status:
-#define ERROR(X) error(X);
 // will definitely crash the program, regardless of test status:
-#define DEFINITELY_ERROR(X) playdate->system->error(X);
+// TODO: why doesn't this crash at start init
+#define DEFINITELY_ERROR(X) {playdate->system->logToConsole(X); playdate->system->error(X);}
 #define NOTHING ((void)0)
 #define STRINGIFY(X) _STRINGIFY(X)
 #define _STRINGIFY(X) #X
@@ -32,7 +31,7 @@
 #define ASSERT(X) _ASSERT(playdate->system->error, X)
 #define ASSERT_LOGGED(X) _ASSERT(error_log, X)
 
-#define _TEST_WITH_CONTEXT(e, x, contextFormat, ...) DEBUG_ONLY({ \
+#define _TEST(e, x, contextFormat, ...) DEBUG_ONLY({ \
     ++error_test_only; \
     x; \
     { \
@@ -43,22 +42,11 @@
     } \
     --error_test_only; \
 })
-#define TEST_WITH_CONTEXT(x, contextFormat, ...) \
-    _TEST_WITH_CONTEXT(playdate->system->error, x, contextFormat, __VA_ARGS__)
-#define TEST_WITH_CONTEXT_LOGGED(x, contextFormat, ...) \
-    _TEST_WITH_CONTEXT(error_log, x, contextFormat, __VA_ARGS__)
+#define TEST(x, contextFormat, ...) \
+    _TEST(playdate->system->error, x, contextFormat, __VA_ARGS__)
+#define TEST_LOGGED(x, contextFormat, ...) \
+    _TEST(error_log, x, contextFormat, __VA_ARGS__)
 
-#define TEST(x) DEBUG_ONLY({ \
-    ++error_test_only; \
-    x; \
-    { \
-        const char *error = error_pull(); \
-        if (error[0] != 0) { \
-            DEFINITELY_ERROR("%s: %s" __AND AT __AND error); \
-        } \
-    } \
-    --error_test_only; \
-})
 #define _EXPECT_EQUAL(e, t, format, x, y) DEBUG_ONLY({ \
     t test_x = (x); \
     t test_y = (y); \
@@ -71,23 +59,27 @@
 #define EXPECT_INT_EQUAL_LOGGED(x, y) \
     _EXPECT_EQUAL(error_log, int, "%d", x, y)
 
-#define EXPECT_ERROR(expected_error_input, run) DEBUG_ONLY({ \
+#define _EXPECT_ERROR(e, run, expected_error_input) DEBUG_ONLY({ \
     run; \
     { \
         const char *error = error_pull(); \
         const char *expected_error = (expected_error_input); \
         if (strncmp(error, expected_error, ERROR_BUFFER_SIZE)) { \
-            DEFINITELY_ERROR("expected `" expected_error_input "`, got error `%s`" AND error); \
+            e("expected `" expected_error_input "`, got error `%s`" AND error); \
         } \
     } \
 })
+#define EXPECT_ERROR(run, expected_error_input) \
+    _EXPECT_ERROR(playdate->system->error, run, expected_error_input)
+#define EXPECT_ERROR_LOGGED(run, expected_error_input) \
+    _EXPECT_ERROR(error_log, run, expected_error_input)
 
 #include "playdate.h"
 
 #include <stdarg.h>
 
 // stops execution (if not in a test):
-void error(const char *format, ...);
+void error_die(const char *format, ...);
 // logs an error (or warning).
 void error_log(const char *format, ...);
 // logs an error (or warning), with variable argument list.

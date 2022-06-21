@@ -197,6 +197,7 @@ int display_pixel_collision(int x, int y) {
     return ~(row_buffer[byte] >> bit) & 1;
 }
 
+#ifndef NDEBUG
 void test__core__display() {
     TEST(
         uint8_t clear_color = 123;
@@ -205,13 +206,15 @@ void test__core__display() {
         const uint8_t *display_buffer = display();
         for (int y = 0; y < LCD_ROWS; ++y)
         for (int byte = 0; byte < LCD_COLUMNS / 8; ++byte) {
-            TEST_WITH_CONTEXT(
+            TEST(
                 EXPECT_INT_EQUAL(
                     display_buffer[y * ROW_STRIDE + byte],
                     display_color 
                 ),
                 "at (y = %d, byte = %d)", y, byte
             );
-        }
+        },
+        "%s: can clear the whole display", AT
     );
 }
+#endif
