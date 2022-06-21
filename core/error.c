@@ -4,7 +4,6 @@
 
 DEBUG_ONLY(int error_test_only = 0);
 
-#define ERROR_BUFFER_SIZE 4096
 static int error_buffer_index = 0;
 // probably only need space for one error buffer, but we do swap them out.
 char error_buffers[2][ERROR_BUFFER_SIZE] = {{0}, {0}};
@@ -14,9 +13,14 @@ char *error_buffer() {
     return error_buffers[error_buffer_index];
 }
 
-void error(const char *format, ...) {
+void error_log(const char *format, ...) {
     va_list variable_arguments;
     va_start(variable_arguments, format);
+    error_log_variable(format, variable_arguments);
+    va_end(variable_arguments);
+}
+
+void error_log_variable(const char *format, va_list variable_arguments) {
     // i would do `playdate->system->verror(format, variable_arguments);`
     // but playdate->system doesn't expose a verror, so first print to error buffer.
     int delta = vsnprintf(
@@ -30,8 +34,14 @@ void error(const char *format, ...) {
     if (delta >= 0) {
         current_error_length += delta;
     } else {
-        playdate->system->error("format seems invalid: %s", format);
+        DEFINITELY_ERROR("format seems invalid: %s" AND format);
     }
+}
+
+void error(const char *format, ...) {
+    va_list variable_arguments;
+    va_start(variable_arguments, format);
+    error_log_variable(format, variable_arguments);
     va_end(variable_arguments);
     #ifndef NDEBUG
     if (error_test_only) {
@@ -53,5 +63,31 @@ const char *error_pull() {
     // new error buffer should be reset:
     error_buffer()[0] = 0;
     return result;
+}
+
+void test__core__error() {
+    TEST(
+        EXPECT_INT_EQUAL(1, 1);
+        EXPECT_INT_EQUAL(15, 15);
+    );
+
+    EXPECT_ERROR("a = 7 != b = 8",
+        int a = 7;
+        int b = 8;
+        EXPECT_INT_EQUAL_LOGGED(a, b);
+    );
+
+    EXPECT_ERROR(
+        // not ideal, but we're logging the error at i = 8
+        // and i = 9 knows there's an existing error so adds to it.
+        // normally you wouldn't do a LOGGED test here, you'd just die.
+        "at i = 9: at i = 8: expected i != 8",
+        for (int i = 0; i < 10; ++i) {
+            TEST_WITH_CONTEXT_LOGGED(
+                "at i = %d", i,
+                ASSERT_LOGGED(i != 8);
+            );
+        }
+    );
 }
 #endif
