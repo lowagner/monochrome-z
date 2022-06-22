@@ -29,7 +29,7 @@ enum snake_collision {
 };
 
 void snake_initialize() {
-    snake.counter = 0;
+    playdate->system->logToConsole("snake init");
     snake.inverse_speed = 3;
     snake.half_size = 8;
     // TODO: add support for dizziness
@@ -39,7 +39,9 @@ void snake_initialize() {
 }
 
 void snake_reset() {
+    playdate->system->logToConsole("snake reset");
     snake.state = (snake_state){
+        .counter = 0,
         .head = (snake_piece){
             .x = 20 + snake.half_size,
             .y = 20 + snake.half_size,
@@ -59,16 +61,13 @@ void snake_reset() {
 
 void snake_update(display_slice slice) {
     if (runtime.transition.counter) {
-        playdate->system->logToConsole("snake counter %d", runtime.transition.counter);
         // we rely on the display pixels to contain the game state, so
         // unless we have the full display to work with, don't do anything else:
         snake_needs_reset = 1;
         display_clear_alternating(85, 170, slice);
     } else if (snake_needs_init) {
-        playdate->system->logToConsole("snake init");
         snake_initialize();
     } else if (snake_needs_reset) {
-        playdate->system->logToConsole("snake reset");
         snake_reset();
 
         display_clear(0, slice);
@@ -80,20 +79,18 @@ void snake_update(display_slice slice) {
         if (--snake.state.game_over <= 0) {
             snake_needs_reset = 1;
         }
-    } else if (++snake.counter < snake.inverse_speed) {
-        playdate->system->logToConsole("snake waiting");
+    } else if (++snake.state.counter < snake.inverse_speed) {
         // other logic while we wait for snake to move.
         snake_maybe_add_apple();
     } else {
-        playdate->system->logToConsole("snake advancing");
-        snake.counter = 0;
+        snake.state.counter = 0;
         snake_advance();
         snake_maybe_add_apple();
     }
 }
 
 void snake_advance() {
-    playdate->system->logToConsole("updating snake %d, %d", snake.state.head.x, snake.state.head.y);
+    playdate->system->logToConsole("advancing snake from (%d, %d)", snake.state.head.x, snake.state.head.y);
     if (snake_advance_head() == kSnakeCollisionApple) {
         return;
     }

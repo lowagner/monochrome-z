@@ -22,6 +22,7 @@ typedef struct snake_piece {
     snake_piece;
 
 typedef struct snake_state {
+    int counter;
     snake_piece head;
     snake_piece tail;
     struct {
@@ -38,7 +39,6 @@ typedef struct snake_state {
 struct snake {
     int half_size;
     int dizziness;
-    int counter;
     int inverse_speed;
     snake_state state;
 };
