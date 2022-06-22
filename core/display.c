@@ -223,7 +223,7 @@ int display_box_collision(display_box box) {
         );
         for (int16_t row = box.start_y; row < box.end_y; ++row) {
             if (display_byte_collision_with_mask(
-                display_buffer + ROW_STRIDE * row + last_full_byte,
+                display_buffer[ROW_STRIDE * row + last_full_byte],
                 mask,
                 inversion
             )) {
