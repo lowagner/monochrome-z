@@ -5,7 +5,7 @@
 #include <string.h> // memcpy
 
 static void snake_advance();
-static int snake_advance_head();
+static void snake_advance_head();
 static void snake_advance_tail();
 static void snake_advance_piece_no_draw(snake_piece *piece);
 static void snake_clear(int center_x, int center_y);
@@ -30,10 +30,11 @@ enum snake_collision {
 
 void snake_initialize() {
     playdate->system->logToConsole("snake init");
-    snake.inverse_speed = 3;
+    snake.starting_length = 2;
     snake.half_size = 8;
     // TODO: add support for dizziness
     snake.dizziness = 0;
+    snake.inverse_speed = 3;
 
     snake_needs_init = 0;
 }
@@ -49,6 +50,9 @@ void snake_reset() {
             .lfsr = 1,
             .direction = kSnakeDirectionRight,
         },
+        // size will be at least 2, and we'll increment to size 2 in this reset
+        // method (see snake_advance_piece_no_draw), so only count delta above that:
+        .size_delta = snake.starting_length > 2 ? snake.starting_length - 2 : 0,
         .game_over = 0,
         .score = 0,
     };
@@ -91,15 +95,19 @@ void snake_update(display_slice slice) {
 
 void snake_advance() {
     playdate->system->logToConsole("advancing snake from (%d, %d)", snake.state.head.x, snake.state.head.y);
-    if (snake_advance_head() == kSnakeCollisionApple) {
-        return;
+    snake_advance_head();
+    if (snake.state.size_delta == 0) {
+        snake_advance_tail();
+    } else if (snake.state.size_delta > 0) {
+        --snake.state.size_delta;
+    } else {
+        // TODO: support this, maybe, but require having at least length == 2
+        playdate->system->logToConsole("invalid snake size delta: %d", snake.state.size_delta);
+        snake.state.game_over = GAME_OVER;
     }
-    // advancing was either death or into nothing,
-    // either way, we should advance the tail:
-    snake_advance_tail();
 }
 
-static int snake_advance_head() {
+static void snake_advance_head() {
     playdate->system->logToConsole("adv snk head from %d, %d", snake.state.head.x, snake.state.head.y);
     snake_piece old_snake_head;
     memcpy(&old_snake_head, &snake.state.head, sizeof(snake_piece));
@@ -114,13 +122,13 @@ static int snake_advance_head() {
             snake.state.game_over = GAME_OVER;
             break;
         case kSnakeCollisionApple:
+            ++snake.state.size_delta;
             snake_clear(snake.state.apple.x, snake.state.apple.y);
             snake.state.apple.present = 0;
             break;
     }
     snake_draw(&old_snake_head);
     snake_draw(&snake.state.head);
-    return collision_result;
 }
 
 static void snake_advance_tail() {

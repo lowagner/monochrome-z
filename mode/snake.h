@@ -22,9 +22,9 @@ typedef struct snake_piece {
     snake_piece;
 
 typedef struct snake_state {
-    // TODO: starting_length
     int counter;
     snake_piece head;
+    int size_delta;
     snake_piece tail;
     struct {
         int x, y;
@@ -38,6 +38,10 @@ typedef struct snake_state {
     snake_state;
 
 struct snake {
+    // starting length needs to be at least 2, since head
+    // and tail need to be able to keep track of their state
+    // by what's drawn on the screen.
+    int starting_length;
     int half_size;
     int dizziness;
     int inverse_speed;
