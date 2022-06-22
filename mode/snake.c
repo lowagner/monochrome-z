@@ -101,7 +101,13 @@ void snake_update(display_slice slice) {
         if (x_axis || y_axis) {
             if (x_axis && y_axis) {
                 // we have to guess where the player wants to go
-                // TODO: check existing direction on snake.state.head
+                if ((snake.state.head.direction & 1) == 1) {
+                    // snake was traveling in the y direction, so we can switch to the x direction:
+                    snake.state.desired_direction = -x_axis + 1;
+                } else {
+                    // snake was traveling in the x direction, so we can switch to the y direction:
+                    snake.state.desired_direction = y_axis + 2;
+                }
             } else if (x_axis) {
                 // just x_axis
                 if ((snake.state.head.direction & 1) == 1) {

@@ -23,6 +23,9 @@ typedef struct snake_piece {
 
 typedef struct snake_state {
     int counter;
+    // don't modify the direction on head.direction until
+    // we actually advance the snake, so we can see if we
+    // want to move diagonally:
     int desired_direction;
     snake_piece head;
     snake_piece tail;
