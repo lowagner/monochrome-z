@@ -88,8 +88,11 @@ void display_clear_alternating(uint8_t bg_color0, uint8_t bg_color1, display_sli
 #define BOX_EMPTY(b) \
     (b.start_x >= b.end_x || b.start_y >= b.end_y)
 
-#define BOX_OFF_SCREEN(b) \
+#define BOX_FULLY_OFF_SCREEN(b) \
     (b.end_x <= 0 || b.start_x >= LCD_COLUMNS || b.end_y <= 0 || b.start_y >= LCD_ROWS)
+
+#define BOX_ANY_OFF_SCREEN(b) \
+    (b.start_x < 0 || b.end_x > LCD_COLUMNS || b.start_y < 0 || b.end_y > LCD_ROWS)
 
 #define NORMALIZE_BOX(b) { \
     if (b.start_x < 0) b.start_x = 0; \
@@ -102,7 +105,7 @@ void display_clear_alternating(uint8_t bg_color0, uint8_t bg_color1, display_sli
 #define U8_BITMASK_RIGHT_DISPLAY_BITS(x) ((1 << (x)) - 1)
 
 void display_box_draw(uint8_t color, display_box box) {
-    if (BOX_OFF_SCREEN(box) || BOX_EMPTY(box)) {
+    if (BOX_FULLY_OFF_SCREEN(box) || BOX_EMPTY(box)) {
         return;
     }
     NORMALIZE_BOX(box);
@@ -165,7 +168,7 @@ int display_box_collision(display_box box) {
     if (BOX_EMPTY(box)) {
         return 0;
     }
-    if (BOX_OFF_SCREEN(box)) {
+    if (BOX_ANY_OFF_SCREEN(box)) {
         // assume being off screen means you hit a wall:
         return 1;
     }
