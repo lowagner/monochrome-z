@@ -35,6 +35,21 @@ static inline uint8_t display_maybe_invert_color(uint8_t color) {
     return ~color;
 }
 
+// pass in a pre-computed inversion here.
+// i.e., inversion = display_inversion().
+static inline uint8_t display_byte_collision_with_mask(
+    uint8_t byte,
+    uint8_t mask,
+    uint8_t inversion
+) {
+    return (byte ^ inversion) & mask;
+}
+
+static inline uint8_t display_inversion() {
+    // TODO: send 0 if inverted
+    return 255;
+}
+
 void display_clear(uint8_t bg_color, display_slice slice) {
     if (slice.start_row >= slice.end_row || slice.start_row >= LCD_ROWS) {
         return;
@@ -164,26 +179,54 @@ int display_box_collision(display_box box) {
     int last_bits = box.end_x % 8;
 
     uint8_t *const display_buffer = display();
+    const uint8_t inversion = display_inversion();
 
-    if (start_bits) {
-        uint8_t bitmask = U8_BITMASK_RIGHT_DISPLAY_BITS(start_bits);
-        for (int16_t row = box.start_y; row < box.end_y; ++row) {
-            if (~display_buffer[ROW_STRIDE * row + first_full_byte - 1] & bitmask) {
+    if (last_full_byte - first_full_byte > 0) {
+        if (start_bits) {
+            uint8_t mask = U8_BITMASK_RIGHT_DISPLAY_BITS(start_bits);
+            for (int16_t row = box.start_y; row < box.end_y; ++row) {
+                if (display_byte_collision_with_mask(
+                    display_buffer[ROW_STRIDE * row + first_full_byte - 1],
+                    mask,
+                    inversion
+                )) {
+                    return 1;
+                }
+            }
+        }
+        for (int16_t row = box.start_y; row < box.end_y; ++row)
+        for (int byte = first_full_byte; byte < last_full_byte; ++byte) {
+            if (display_byte_collision_with_mask(
+                display_buffer[ROW_STRIDE * row + byte],
+                255,
+                inversion
+            )) {
                 return 1;
             }
         }
-    }
-    if (last_full_byte - first_full_byte > 0)
-    for (int16_t row = box.start_y; row < box.end_y; ++row)
-    for (int16_t byte = first_full_byte; byte < last_full_byte; ++byte) {
-        if (~display_buffer[ROW_STRIDE * row + byte]) {
-            return 1;
+        if (last_bits) {
+            uint8_t mask = U8_BITMASK_LEFT_DISPLAY_BITS(last_bits);
+            for (int16_t row = box.start_y; row < box.end_y; ++row) {
+                if (display_byte_collision_with_mask(
+                    display_buffer[ROW_STRIDE * row + last_full_byte],
+                    mask,
+                    inversion
+                )) {
+                    return 1;
+                }
+            }
         }
-    }
-    if (last_bits) {
-        uint8_t bitmask = U8_BITMASK_LEFT_DISPLAY_BITS(last_bits);
+    } else {
+        uint8_t mask = (
+                U8_BITMASK_RIGHT_DISPLAY_BITS(start_bits)
+            &   U8_BITMASK_LEFT_DISPLAY_BITS(last_bits)
+        );
         for (int16_t row = box.start_y; row < box.end_y; ++row) {
-            if (~display_buffer[ROW_STRIDE * row + last_full_byte] & bitmask) {
+            if (display_byte_collision_with_mask(
+                display_buffer + ROW_STRIDE * row + last_full_byte,
+                mask,
+                inversion
+            )) {
                 return 1;
             }
         }
