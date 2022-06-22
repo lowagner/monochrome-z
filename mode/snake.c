@@ -7,7 +7,7 @@
 static void snake_advance();
 static int snake_advance_head();
 static void snake_advance_tail();
-static void snake_advance_piece(snake_piece *piece);
+static void snake_advance_piece_no_draw(snake_piece *piece);
 static void snake_clear(int center_x, int center_y);
 static void snake_draw(const snake_piece *piece);
 static void snake_read_direction_from_trail(snake_piece *piece);
@@ -54,7 +54,7 @@ void snake_reset() {
     };
     snake.state.apple.present = 0;
     memcpy(&snake.state.tail, &snake.state.head, sizeof(snake_piece));
-    snake_advance_head();
+    snake_advance_piece_no_draw(&snake.state.head);
 
     snake_needs_reset = 0;
 }
@@ -100,12 +100,13 @@ void snake_advance() {
 }
 
 static int snake_advance_head() {
+    playdate->system->logToConsole("adv snk head from %d, %d", snake.state.head.x, snake.state.head.y);
     snake_piece old_snake_head;
     memcpy(&old_snake_head, &snake.state.head, sizeof(snake_piece));
     // we actually want to clear out the old head so the
     // new head doesn't collide with it accidentally due to dizziness.
     snake_clear(old_snake_head.x, old_snake_head.y);
-    snake_advance_piece(&snake.state.head);
+    snake_advance_piece_no_draw(&snake.state.head);
     int collision_result = snake_check_collisions(&snake.state.head);
     switch (collision_result) {
         case kSnakeCollisionDeath:
@@ -118,42 +119,48 @@ static int snake_advance_head() {
             break;
     }
     snake_draw(&old_snake_head);
-    switch (snake.state.head.direction) {
-        case kSnakeDirectionRight:
-            snake.state.head.x += snake.half_size;
-            break;
-        case kSnakeDirectionUp:
-            snake.state.head.y -= snake.half_size;
-            break;
-        case kSnakeDirectionLeft:
-            snake.state.head.x -= snake.half_size;
-            break;
-        case kSnakeDirectionDown:
-            snake.state.head.y += snake.half_size;
-            break;
-        default:
-            snake.state.game_over = GAME_OVER;
-    }
     snake_draw(&snake.state.head);
     return collision_result;
 }
 
 static void snake_advance_tail() {
+    playdate->system->logToConsole("adv snk tail from %d, %d", snake.state.tail.x, snake.state.tail.y);
     snake_clear(snake.state.tail.x, snake.state.tail.y);
-    snake_advance_piece(&snake.state.tail);
+    snake_advance_piece_no_draw(&snake.state.tail);
     snake_read_direction_from_trail(&snake.state.tail);
     // clearing might have gotten rid of part of the new tail (dizziness),
     // make sure to put it back, only AFTER we've read the direction from the trail.
     snake_draw(&snake.state.tail);
 }
 
-static void snake_advance_piece(snake_piece *piece) {
+static void snake_advance_piece_no_draw(snake_piece *piece) {
     // does not actually draw, in case we're the tail (where we don't want to overwrite the trail)
     // or the head (where we want to check collisions first).
-    // TODO
+    switch (piece->direction) {
+        case kSnakeDirectionRight:
+            piece->x += 2 * snake.half_size;
+            break;
+        case kSnakeDirectionUp:
+            piece->y -= 2 * snake.half_size;
+            break;
+        case kSnakeDirectionLeft:
+            piece->x -= 2 * snake.half_size;
+            break;
+        case kSnakeDirectionDown:
+            piece->y += 2 * snake.half_size;
+            break;
+        default:
+            snake.state.game_over = GAME_OVER;
+            playdate->system->logToConsole(
+                "invalid direction for snake to advance in %d",
+                piece->direction
+            );
+    }
+    playdate->system->logToConsole("* advanced snk piece to %d, %d", piece->x, piece->y);
 }
 
 static void snake_clear(int center_x, int center_y) {
+    playdate->system->logToConsole("clear snk piece %d, %d", center_x, center_y);
     display_box_draw(0, (display_box){
         .start_x = center_x - snake.half_size,
         .start_y = center_y - snake.half_size,
@@ -163,6 +170,7 @@ static void snake_clear(int center_x, int center_y) {
 }
 
 static void snake_draw(const snake_piece *piece) {
+    playdate->system->logToConsole("drw snk piece %d, %d", piece->x, piece->y);
     display_box_draw(255, (display_box){
         .start_x = piece->x - snake.half_size,
         .start_y = piece->y - snake.half_size,
@@ -204,6 +212,7 @@ static void snake_read_direction_from_trail(snake_piece *piece) {
 }
 
 static int snake_check_collisions(const snake_piece *piece) {
+    playdate->system->logToConsole("checking collisions @ %d, %d", piece->x, piece->y);
     display_box snake_box = {
         .start_x = piece->x - snake.half_size,
         .start_y = piece->y - snake.half_size,

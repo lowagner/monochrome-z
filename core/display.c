@@ -258,6 +258,7 @@ void display_pixel_draw(int x, int y) {
 }
 
 void display_pixel_clear(int x, int y) {
+    playdate->system->logToConsole("* clear pxl %d, %d", x, y);
     if (x < 0 || x >= LCD_COLUMNS || y < 0 || y >= LCD_ROWS) {
         return;
     }

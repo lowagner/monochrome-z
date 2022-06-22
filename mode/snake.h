@@ -22,6 +22,7 @@ typedef struct snake_piece {
     snake_piece;
 
 typedef struct snake_state {
+    // TODO: starting_length
     int counter;
     snake_piece head;
     snake_piece tail;
