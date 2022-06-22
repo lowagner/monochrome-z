@@ -66,8 +66,8 @@ void display_clear_alternating(uint8_t bg_color0, uint8_t bg_color1, display_sli
     if (b.start_y >= LCD_ROWS) b.end_y = LCD_ROWS; \
 }
 
-#define U8_BITMASK_FIRST_BITS(x) (-(1 << (7 - (x) + 1)))
-#define U8_BITMASK_LAST_BITS(x) ((1 << (x)) - 1)
+#define U8_BITMASK_LEFT_DISPLAY_BITS(x) (-(1 << (8 - (x))))
+#define U8_BITMASK_RIGHT_DISPLAY_BITS(x) ((1 << (x)) - 1)
 
 void display_box_draw(uint8_t color, display_box box) {
     if (BOX_OFF_SCREEN(box) || BOX_EMPTY(box)) {
@@ -85,7 +85,7 @@ void display_box_draw(uint8_t color, display_box box) {
     uint8_t *const display_buffer = display();
 
     if (start_bits) {
-        uint8_t first_bits_color = U8_BITMASK_LAST_BITS(start_bits) & color;
+        uint8_t first_bits_color = U8_BITMASK_RIGHT_DISPLAY_BITS(start_bits) & color;
         for (int16_t row = box.start_y; row < box.end_y; ++row) {
             display_buffer[ROW_STRIDE * row + first_full_byte - 1] &= ~first_bits_color;
         }
@@ -99,7 +99,7 @@ void display_box_draw(uint8_t color, display_box box) {
         );
     }
     if (last_bits) {
-        uint8_t last_bits_color = U8_BITMASK_FIRST_BITS(last_bits) & color;
+        uint8_t last_bits_color = U8_BITMASK_LEFT_DISPLAY_BITS(last_bits) & color;
         for (int16_t row = box.start_y; row < box.end_y; ++row) {
             display_buffer[ROW_STRIDE * row + last_full_byte] &= ~last_bits_color;
         }
@@ -127,7 +127,7 @@ int display_box_collision(display_box box) {
     uint8_t *const display_buffer = display();
 
     if (start_bits) {
-        uint8_t bitmask = U8_BITMASK_LAST_BITS(start_bits);
+        uint8_t bitmask = U8_BITMASK_RIGHT_DISPLAY_BITS(start_bits);
         for (int16_t row = box.start_y; row < box.end_y; ++row) {
             if (~display_buffer[ROW_STRIDE * row + first_full_byte - 1] & bitmask) {
                 return 1;
@@ -142,7 +142,7 @@ int display_box_collision(display_box box) {
         }
     }
     if (last_bits) {
-        uint8_t bitmask = U8_BITMASK_FIRST_BITS(last_bits);
+        uint8_t bitmask = U8_BITMASK_LEFT_DISPLAY_BITS(last_bits);
         for (int16_t row = box.start_y; row < box.end_y; ++row) {
             if (~display_buffer[ROW_STRIDE * row + last_full_byte] & bitmask) {
                 return 1;
@@ -172,7 +172,7 @@ void display_pixel_draw(int x, int y) {
     int bit = 7 - (x % 8); // most-significant-bits are left-most.
     // TODO: for inversion, we can't use & here.
     row_buffer[byte] &= ~(1 << bit);
-    playdate->graphics->markUpdatedRows(y, y);
+    //playdate->graphics->markUpdatedRows(y, y);
 }
 
 void display_pixel_clear(int x, int y) {
@@ -215,6 +215,64 @@ void test__core__display() {
             );
         },
         "%s: can clear the whole display", AT
+    );
+
+    TEST(
+        display_clear(0, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
+        display_box_draw(255, (display_box){.start_x = 8, .end_x = 16, .start_y = 35, .end_y = 40});
+        const uint8_t *display_buffer = display();
+        for (int y = 0; y < LCD_ROWS; ++y)
+        for (int byte = 0; byte < LCD_COLUMNS / 8; ++byte) {
+            TEST(
+                EXPECT_INT_EQUAL(
+                    display_buffer[y * ROW_STRIDE + byte],
+                    255 * (1 - (y >= 35 && y < 40 && byte == 1))
+                ),
+                "at (y = %d, byte = %d)", y, byte
+            );
+        },
+        "%s: can draw a black box on a white screen", AT
+    );
+
+    TEST(
+        const uint8_t *display_buffer = display();
+        for (int clear_color_int = 0; clear_color_int <= 255; clear_color_int += 85) {
+            uint8_t bg_color = clear_color_int;
+            uint8_t fg_color = ~bg_color; 
+            display_clear(bg_color, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
+            for (int start_x = -1; start_x < LCD_COLUMNS; start_x += 131)
+            for (int end_x = start_x + 1; end_x <= start_x + 55; end_x += 27)
+            for (int start_y = -1; start_y < LCD_ROWS; start_y += 130)
+            for (int end_y = start_y + 1; end_y <= start_y + 18; end_y += 19) {
+                /*printf("at %d box{x=[%d, %d), y=[%d, %d)}\n",
+                        clear_color_int, start_x, end_x, start_y, end_y); */
+                display_box_draw(fg_color, (display_box){
+                    .start_x = start_x,
+                    .end_x = end_x,
+                    .start_y = start_y,
+                    .end_y = end_y,
+                });
+                display_box_draw(bg_color, (display_box){
+                    .start_x = start_x,
+                    .end_x = end_x,
+                    .start_y = start_y,
+                    .end_y = end_y,
+                });
+                for (int y = 0; y < LCD_ROWS; ++y)
+                for (int byte = 0; byte < LCD_COLUMNS / 8; ++byte) {
+                    TEST(
+                        EXPECT_INT_EQUAL(
+                            display_buffer[y * ROW_STRIDE + byte],
+                            // bg color, inverted:
+                            (uint8_t)~bg_color
+                        ),
+                        "at box{x=[%d, %d), y=[%d, %d)} display(y = %d, byte = %d)",
+                        start_x, end_x, start_y, end_y, y, byte
+                    );
+                }
+            }
+        },
+        "%s: can erase a drawn box with a clear box", AT
     );
 }
 #endif

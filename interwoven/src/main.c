@@ -19,6 +19,7 @@ void initialize() {
     test__mode__snake();
     #endif
     font_load("/System/Fonts/Asheville-Sans-14-Bold.pft");
+    runtime.transition.next_mode = kRuntimeModeSnake;
 }
 
 void default_update(display_slice slice) {
