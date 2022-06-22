@@ -21,20 +21,26 @@ typedef struct snake_piece {
 }
     snake_piece;
 
-struct snake {
+typedef struct snake_state {
     snake_piece head;
     snake_piece tail;
-    int half_size;
-    int dizziness;
-    int counter;
-    int inverse_speed;
     struct {
         int x, y;
         display_box box;
+        int present;
     }
         apple;
     int game_over;
     uint64_t score;
+}
+    snake_state;
+
+struct snake {
+    int half_size;
+    int dizziness;
+    int counter;
+    int inverse_speed;
+    snake_state state;
 };
 
 extern struct snake snake;
