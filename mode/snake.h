@@ -7,10 +7,10 @@
 #include <stdint.h>
 
 enum snake_direction {
-    kSnakeDirectionRight,
-    kSnakeDirectionUp,
-    kSnakeDirectionLeft,
-    kSnakeDirectionDown,
+    kSnakeDirectionRight = 0,
+    kSnakeDirectionUp = 1,
+    kSnakeDirectionLeft = 2,
+    kSnakeDirectionDown = 3,
 };
 
 typedef struct snake_piece {
@@ -23,9 +23,10 @@ typedef struct snake_piece {
 
 typedef struct snake_state {
     int counter;
+    int desired_direction;
     snake_piece head;
-    int size_delta;
     snake_piece tail;
+    int size_delta;
     struct {
         int x, y;
         display_box box;

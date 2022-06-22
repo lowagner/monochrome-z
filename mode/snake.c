@@ -1,5 +1,6 @@
 #include "snake.h"
 
+#include "../core/buttons.h"
 #include "../core/runtime.h"
 
 #include <string.h> // memcpy
@@ -41,8 +42,12 @@ void snake_initialize() {
 
 void snake_reset() {
     playdate->system->logToConsole("snake reset");
+    if (snake.half_size < 1) {
+        snake.half_size = 1;
+    }
     snake.state = (snake_state){
         .counter = 0,
+        .desired_direction = kSnakeDirectionRight,
         .head = (snake_piece){
             .x = 20 + snake.half_size,
             .y = 20 + snake.half_size,
@@ -83,18 +88,49 @@ void snake_update(display_slice slice) {
         if (--snake.state.game_over <= 0) {
             snake_needs_reset = 1;
         }
-    } else if (++snake.state.counter < snake.inverse_speed) {
-        // other logic while we wait for snake to move.
-        snake_maybe_add_apple();
     } else {
-        snake.state.counter = 0;
-        snake_advance();
-        snake_maybe_add_apple();
+        // actual game playing:
+        int x_axis = (
+                ( (buttons.current & kButtonLeft) ? -1 : 0 )
+            +   ( (buttons.current & kButtonRight) ? +1 : 0 )
+        );
+        int y_axis = (
+                ( (buttons.current & kButtonUp) ? -1 : 0 )
+            +   ( (buttons.current & kButtonDown) ? +1 : 0 )
+        );
+        if (x_axis || y_axis) {
+            if (x_axis && y_axis) {
+                // we have to guess where the player wants to go
+                // TODO: check existing direction on snake.state.head
+            } else if (x_axis) {
+                // just x_axis
+                if ((snake.state.head.direction & 1) == 1) {
+                    // snake was traveling in the y direction, so we can switch to the x direction:
+                    snake.state.desired_direction = -x_axis + 1;
+                }
+            } else {
+                // just y_axis
+                if ((snake.state.head.direction & 1) == 0) {
+                    // snake was traveling in the x direction, so we can switch to the y direction:
+                    snake.state.desired_direction = y_axis + 2;
+                }
+            }
+        }
+        
+        if (++snake.state.counter < snake.inverse_speed) {
+            // other logic while we wait for snake to move.
+            snake_maybe_add_apple();
+        } else {
+            snake.state.counter = 0;
+            snake_advance();
+            snake_maybe_add_apple();
+        }
     }
 }
 
 void snake_advance() {
     playdate->system->logToConsole("advancing snake from (%d, %d)", snake.state.head.x, snake.state.head.y);
+    snake.state.head.direction = snake.state.desired_direction;
     snake_advance_head();
     if (snake.state.size_delta == 0) {
         snake_advance_tail();
