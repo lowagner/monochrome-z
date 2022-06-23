@@ -104,6 +104,15 @@ void display_clear_alternating(uint8_t bg_color0, uint8_t bg_color1, display_sli
 #define U8_BITMASK_RIGHT_DISPLAY_BITS(x) ((1 << (8 - (x))) - 1)
 
 void display_box_draw(uint8_t color, display_box box) {
+    display_box_draw_multicolor(1, &color, box);
+}
+
+void display_box_draw_alternating(uint8_t color0, uint8_t color1, display_box box) {
+    uint8_t row_colors[2] = {color0, color1};
+    display_box_draw_multicolor(2, row_colors, box);
+}
+
+void display_box_draw_multicolor(int color_count, uint8_t *row_colors, display_box box) {
     if (BOX_FULLY_OFF_SCREEN(box) || BOX_EMPTY(box)) {
         return;
     }
@@ -117,7 +126,6 @@ void display_box_draw(uint8_t color, display_box box) {
     int last_bits = box.end_x % 8;
 
     uint8_t *const display_buffer = display();
-    color = display_maybe_invert_color(color);
 
     if (last_full_byte >= first_full_byte) {
         if (start_bits) {
@@ -126,7 +134,7 @@ void display_box_draw(uint8_t color, display_box box) {
                 display_byte_draw_with_mask(
                     display_buffer + ROW_STRIDE * row + first_full_byte - 1,
                     mask,
-                    color
+                    display_maybe_invert_color(row_colors[row % color_count])
                 );
             }
         }
@@ -134,7 +142,7 @@ void display_box_draw(uint8_t color, display_box box) {
         for (int16_t row = box.start_y; row < box.end_y; ++row) {
             memset(
                 display_buffer + ROW_STRIDE * row + first_full_byte,
-                color,
+                display_maybe_invert_color(row_colors[row % color_count]),
                 last_full_byte - first_full_byte
             );
         }
@@ -144,7 +152,7 @@ void display_box_draw(uint8_t color, display_box box) {
                 display_byte_draw_with_mask(
                     display_buffer + ROW_STRIDE * row + last_full_byte,
                     mask,
-                    color
+                    display_maybe_invert_color(row_colors[row % color_count])
                 );
             }
         }
@@ -157,7 +165,7 @@ void display_box_draw(uint8_t color, display_box box) {
             display_byte_draw_with_mask(
                 display_buffer + ROW_STRIDE * row + last_full_byte,
                 mask,
-                color
+                display_maybe_invert_color(row_colors[row % color_count])
             );
         }
     }
