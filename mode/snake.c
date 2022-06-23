@@ -31,8 +31,8 @@ enum snake_collision {
 
 void snake_initialize() {
     playdate->system->logToConsole("snake init");
-    snake.starting_length = 2;
-    snake.size = 8;
+    snake.starting_length = 20;
+    snake.size = 10;
     // TODO: add support for dizziness
     snake.dizziness = 0;
     snake.inverse_speed = 3;
@@ -44,13 +44,15 @@ void snake_reset() {
     playdate->system->logToConsole("snake reset");
     if (snake.size < 2) {
         snake.size = 2;
+    } else if (snake.size > 40) {
+        snake.size = 40;
     }
     snake.state = (snake_state){
         .counter = 0,
         .desired_direction = kSnakeDirectionRight,
         .head = (snake_piece){
-            .x = 6 * snake.size,
-            .y = 6 * snake.size,
+            .x = 4 * snake.size,
+            .y = 4 * snake.size,
             // TODO: set from getMilliseconds
             .lfsr = 1,
             .direction = kSnakeDirectionRight,
