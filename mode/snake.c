@@ -186,18 +186,33 @@ static void snake_advance_tail() {
 static void snake_advance_piece_no_draw(snake_piece *piece) {
     // does not actually draw, in case we're the tail (where we don't want to overwrite the trail)
     // or the head (where we want to check collisions first).
+    int delta_direction = 0;
+    int delta_orthogonal = 0;
+    if (snake.half_size > 1 && snake.dizziness) {
+        lfsr32_next(&piece->lfsr);
+        // TODO: affect delta_direction and delta_orthogonal.
+        // delta_direction should be between -max(snake.size - 3, 0) and 0,
+        // and should get more negative when delta_orthogonal is larger.
+        // delta_orthogonal should be in +-(snake.size - 1)
+        //int max_delta = snake.size - 1;
+        uint32_t random_walk = piece->lfsr;
+    }
     switch (piece->direction) {
         case kSnakeDirectionRight:
-            piece->x += 2 * snake.half_size;
+            piece->x += 2 * snake.half_size + delta_direction;
+            piece->y += delta_orthogonal;
             break;
         case kSnakeDirectionUp:
-            piece->y -= 2 * snake.half_size;
+            piece->x -= delta_orthogonal;
+            piece->y -= 2 * snake.half_size + delta_direction;
             break;
         case kSnakeDirectionLeft:
-            piece->x -= 2 * snake.half_size;
+            piece->x -= 2 * snake.half_size + delta_direction;
+            piece->y -= delta_orthogonal;
             break;
         case kSnakeDirectionDown:
-            piece->y += 2 * snake.half_size;
+            piece->x += delta_orthogonal;
+            piece->y += 2 * snake.half_size + delta_direction;
             break;
         default:
             snake.state.game_over = GAME_OVER;
@@ -256,8 +271,8 @@ static void snake_read_direction_from_trail(snake_piece *piece) {
     } else if (!display_pixel_collision(piece->x, piece->y + 1)) { 
         piece->direction = kSnakeDirectionDown;
     } else {
+        playdate->system->logToConsole("couldn't read trail @ %d, %d", piece->x, piece->y);
         snake.state.game_over = GAME_OVER;
-        // TODO: error message here
     }
 }
 
