@@ -30,9 +30,13 @@ static inline void display_byte_draw_with_mask(
     *buffer_at_byte = (*buffer_at_byte & ~mask) | (real_color & mask);
 }
 
+static inline uint8_t display_inversion() {
+    // TODO: send 0 if inverted
+    return 255;
+}
+
 static inline uint8_t display_maybe_invert_color(uint8_t color) {
-    // TODO: only bit-flip if not color inverted
-    return ~color;
+    return color ^ display_inversion();
 }
 
 // pass in a pre-computed inversion here.
@@ -43,11 +47,6 @@ static inline uint8_t display_byte_collision_with_mask(
     uint8_t inversion
 ) {
     return (byte ^ inversion) & mask;
-}
-
-static inline uint8_t display_inversion() {
-    // TODO: send 0 if inverted
-    return 255;
 }
 
 void display_clear(uint8_t bg_color, display_slice slice) {
@@ -102,7 +101,7 @@ void display_clear_alternating(uint8_t bg_color0, uint8_t bg_color1, display_sli
 }
 
 #define U8_BITMASK_LEFT_DISPLAY_BITS(x) (-(1 << (8 - (x))))
-#define U8_BITMASK_RIGHT_DISPLAY_BITS(x) ((1 << (x)) - 1)
+#define U8_BITMASK_RIGHT_DISPLAY_BITS(x) ((1 << (8 - (x))) - 1)
 
 void display_box_draw(uint8_t color, display_box box) {
     if (BOX_FULLY_OFF_SCREEN(box) || BOX_EMPTY(box)) {
@@ -114,13 +113,13 @@ void display_box_draw(uint8_t color, display_box box) {
     int start_bits = box.start_x % 8;
     if (start_bits) ++first_full_byte;  // now first_full_byte is the ceiling.
 
-    int last_full_byte = box.end_x / 8; // floor of box.end_x / 8
+    int last_full_byte = box.end_x / 8;
     int last_bits = box.end_x % 8;
 
     uint8_t *const display_buffer = display();
     color = display_maybe_invert_color(color);
 
-    if (last_full_byte >= first_full_byte ) {
+    if (last_full_byte >= first_full_byte) {
         if (start_bits) {
             uint8_t mask = U8_BITMASK_RIGHT_DISPLAY_BITS(start_bits);
             for (int16_t row = box.start_y; row < box.end_y; ++row) {
@@ -282,7 +281,7 @@ int display_pixel_collision(int x, int y) {
     const uint8_t *row_buffer = display() + ROW_STRIDE * y;
     int byte = x / 8;
     int bit = 7 - (x % 8); // most-significant-bits are left-most.
-    return ~(row_buffer[byte] >> bit) & 1;
+    return ((row_buffer[byte] ^ display_inversion()) >> bit) & 1;
 }
 
 #ifndef NDEBUG
@@ -320,6 +319,32 @@ void test__core__display() {
             );
         },
         "%s: can draw a black box on a white screen", AT
+    );
+
+    TEST(
+        for (int offset = 0; offset < 10; offset += 1) {
+            display_clear(0, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
+            display_box_draw(255, (display_box){
+                .start_x = 8 + offset,
+                .end_x = 18 + offset,
+                .start_y = 35 + offset,
+                .end_y = 45 + offset,
+            });
+            for (int y = 30; y < 60; ++y) 
+            for (int x = 0; x < LCD_COLUMNS; ++x) {
+                TEST(
+                    EXPECT_INT_EQUAL_LOGGED(display_pixel_collision(x, y), (
+                            y >= 35 + offset 
+                        &&  y < 45 + offset
+                        &&  x >= 8 + offset
+                        &&  x < 18 + offset
+                    )),
+                    "%s: at offset %d (x, y) = (%d, %d), display_byte = %d",
+                    AT, offset, x, y, test_display_buffer[y * ROW_STRIDE + x / 8] 
+                );
+            }
+        },
+        "%s: can draw a 10x10 black box across a boundary", AT
     );
 
     TEST(
