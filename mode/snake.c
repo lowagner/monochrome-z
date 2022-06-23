@@ -314,8 +314,8 @@ static int snake_check_collisions(const snake_piece *piece) {
     display_box snake_box = {
         .start_x = piece->x,
         .start_y = piece->y,
-        .end_x = piece->x + snake.size + 1,
-        .end_y = piece->y + snake.size + 1,
+        .end_x = piece->x + snake.size,
+        .end_y = piece->y + snake.size,
     };
     int display_collision = display_box_collision(snake_box);
     if (!display_collision) {
