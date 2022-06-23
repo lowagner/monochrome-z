@@ -9,7 +9,7 @@ static void snake_advance();
 static void snake_advance_head();
 static void snake_advance_tail();
 static void snake_advance_piece_no_draw(snake_piece *piece);
-static void snake_clear(int center_x, int center_y);
+static void snake_clear(int left_x, int top_y);
 static void snake_draw(const snake_piece *piece);
 static void snake_read_direction_from_trail(snake_piece *piece);
 static int snake_check_collisions(const snake_piece *piece);
@@ -32,7 +32,7 @@ enum snake_collision {
 void snake_initialize() {
     playdate->system->logToConsole("snake init");
     snake.starting_length = 2;
-    snake.half_size = 8;
+    snake.size = 8;
     // TODO: add support for dizziness
     snake.dizziness = 0;
     snake.inverse_speed = 3;
@@ -42,15 +42,15 @@ void snake_initialize() {
 
 void snake_reset() {
     playdate->system->logToConsole("snake reset");
-    if (snake.half_size < 1) {
-        snake.half_size = 1;
+    if (snake.size < 2) {
+        snake.size = 2;
     }
     snake.state = (snake_state){
         .counter = 0,
         .desired_direction = kSnakeDirectionRight,
         .head = (snake_piece){
-            .x = 20 + snake.half_size,
-            .y = 20 + snake.half_size,
+            .x = 6 * snake.size,
+            .y = 6 * snake.size,
             // TODO: set from getMilliseconds
             .lfsr = 1,
             .direction = kSnakeDirectionRight,
@@ -188,7 +188,7 @@ static void snake_advance_piece_no_draw(snake_piece *piece) {
     // or the head (where we want to check collisions first).
     int delta_direction = 0;
     int delta_orthogonal = 0;
-    if (snake.half_size > 1 && snake.dizziness) {
+    if (snake.dizziness) {
         lfsr32_next(&piece->lfsr);
         // TODO: affect delta_direction and delta_orthogonal.
         // delta_direction should be between -max(snake.size - 3, 0) and 0,
@@ -199,20 +199,20 @@ static void snake_advance_piece_no_draw(snake_piece *piece) {
     }
     switch (piece->direction) {
         case kSnakeDirectionRight:
-            piece->x += 2 * snake.half_size + delta_direction;
+            piece->x += snake.size + delta_direction;
             piece->y += delta_orthogonal;
             break;
         case kSnakeDirectionUp:
             piece->x -= delta_orthogonal;
-            piece->y -= 2 * snake.half_size + delta_direction;
+            piece->y -= snake.size + delta_direction;
             break;
         case kSnakeDirectionLeft:
-            piece->x -= 2 * snake.half_size + delta_direction;
+            piece->x -= snake.size + delta_direction;
             piece->y -= delta_orthogonal;
             break;
         case kSnakeDirectionDown:
             piece->x += delta_orthogonal;
-            piece->y += 2 * snake.half_size + delta_direction;
+            piece->y += snake.size + delta_direction;
             break;
         default:
             snake.state.game_over = GAME_OVER;
@@ -224,65 +224,98 @@ static void snake_advance_piece_no_draw(snake_piece *piece) {
     playdate->system->logToConsole("* advanced snk piece to %d, %d", piece->x, piece->y);
 }
 
-static void snake_clear(int center_x, int center_y) {
-    playdate->system->logToConsole("clear snk piece %d, %d", center_x, center_y);
+static void snake_clear(int left_x, int top_y) {
+    playdate->system->logToConsole("clear snk piece %d, %d", left_x, top_y);
     display_box_draw(0, (display_box){
-        .start_x = center_x - snake.half_size,
-        .start_y = center_y - snake.half_size,
-        .end_x = center_x + snake.half_size + 1,
-        .end_y = center_y + snake.half_size + 1,
+        .start_x = left_x,
+        .start_y = top_y,
+        .end_x = left_x + snake.size,
+        .end_y = top_y + snake.size,
     });
 }
 
 static void snake_draw(const snake_piece *piece) {
     playdate->system->logToConsole("drw snk piece %d, %d", piece->x, piece->y);
     display_box_draw(255, (display_box){
-        .start_x = piece->x - snake.half_size,
-        .start_y = piece->y - snake.half_size,
-        .end_x = piece->x + snake.half_size + 1,
-        .end_y = piece->y + snake.half_size + 1,
+        .start_x = piece->x,
+        .start_y = piece->y,
+        .end_x = piece->x + snake.size,
+        .end_y = piece->y + snake.size,
     });
-    switch (piece->direction) {
-        case kSnakeDirectionRight:
-            display_pixel_clear(piece->x + 1, piece->y);
-            break;
-        case kSnakeDirectionUp:
-            display_pixel_clear(piece->x, piece->y - 1);
-            break;
-        case kSnakeDirectionLeft:
-            display_pixel_clear(piece->x - 1, piece->y);
-            break;
-        case kSnakeDirectionDown:
-            display_pixel_clear(piece->x, piece->y + 1);
-            break;
+    int half_size = snake.size / 2;
+    if (snake.size % 2) {
+        switch (piece->direction) {
+            case kSnakeDirectionRight:
+                display_pixel_clear(piece->x + half_size + 1, piece->y + half_size);
+                break;
+            case kSnakeDirectionUp:
+                display_pixel_clear(piece->x + half_size, piece->y + half_size - 1);
+                break;
+            case kSnakeDirectionLeft:
+                display_pixel_clear(piece->x + half_size - 1, piece->y + half_size);
+                break;
+            case kSnakeDirectionDown:
+                display_pixel_clear(piece->x + half_size, piece->y + half_size + 1);
+                break;
+        }
+    } else {
+        switch (piece->direction) {
+            case kSnakeDirectionRight:
+                display_pixel_clear(piece->x + half_size, piece->y + half_size - 1);
+                break;
+            case kSnakeDirectionUp:
+                display_pixel_clear(piece->x + half_size - 1, piece->y + half_size - 1);
+                break;
+            case kSnakeDirectionLeft:
+                display_pixel_clear(piece->x + half_size - 1, piece->y + half_size);
+                break;
+            case kSnakeDirectionDown:
+                display_pixel_clear(piece->x + half_size, piece->y + half_size);
+                break;
+        }
     }
 }
 
 static void snake_read_direction_from_trail(snake_piece *piece) {
     // could optimize for current heading (piece->direction),
     // i.e., since you can't go backwards, but that makes the code a bit messy.
-    // we expect display_pixel_collision(piece->x, piece->y) to be 1.
-    if (!display_pixel_collision(piece->x + 1, piece->y)) {
-        piece->direction = kSnakeDirectionRight;
-    } else if (!display_pixel_collision(piece->x, piece->y - 1)) { 
-        piece->direction = kSnakeDirectionUp;
-    } else if (!display_pixel_collision(piece->x - 1, piece->y)) {
-        piece->direction = kSnakeDirectionLeft;
-    } else if (!display_pixel_collision(piece->x, piece->y + 1)) { 
-        piece->direction = kSnakeDirectionDown;
+    int half_size = snake.size / 2;
+    if (snake.size % 2) {
+        if (!display_pixel_collision(piece->x + half_size + 1, piece->y + half_size)) {
+            piece->direction = kSnakeDirectionRight;
+        } else if (!display_pixel_collision(piece->x + half_size, piece->y + half_size - 1)) { 
+            piece->direction = kSnakeDirectionUp;
+        } else if (!display_pixel_collision(piece->x + half_size - 1, piece->y + half_size)) {
+            piece->direction = kSnakeDirectionLeft;
+        } else if (!display_pixel_collision(piece->x + half_size, piece->y + half_size + 1)) { 
+            piece->direction = kSnakeDirectionDown;
+        } else {
+            playdate->system->logToConsole("couldn't read trail @ %d, %d", piece->x, piece->y);
+            snake.state.game_over = GAME_OVER;
+        }
     } else {
-        playdate->system->logToConsole("couldn't read trail @ %d, %d", piece->x, piece->y);
-        snake.state.game_over = GAME_OVER;
+        if (!display_pixel_collision(piece->x + half_size, piece->y + half_size - 1)) {
+            piece->direction = kSnakeDirectionRight;
+        } else if (!display_pixel_collision(piece->x + half_size - 1, piece->y + half_size - 1)) { 
+            piece->direction = kSnakeDirectionUp;
+        } else if (!display_pixel_collision(piece->x + half_size - 1, piece->y + half_size)) {
+            piece->direction = kSnakeDirectionLeft;
+        } else if (!display_pixel_collision(piece->x + half_size, piece->y + half_size)) { 
+            piece->direction = kSnakeDirectionDown;
+        } else {
+            playdate->system->logToConsole("couldn't read trail @ %d, %d", piece->x, piece->y);
+            snake.state.game_over = GAME_OVER;
+        }
     }
 }
 
 static int snake_check_collisions(const snake_piece *piece) {
     playdate->system->logToConsole("checking collisions @ %d, %d", piece->x, piece->y);
     display_box snake_box = {
-        .start_x = piece->x - snake.half_size,
-        .start_y = piece->y - snake.half_size,
-        .end_x = piece->x + snake.half_size + 1,
-        .end_y = piece->y + snake.half_size + 1,
+        .start_x = piece->x,
+        .start_y = piece->y,
+        .end_x = piece->x + snake.size + 1,
+        .end_y = piece->y + snake.size + 1,
     };
     int display_collision = display_box_collision(snake_box);
     if (!display_collision) {
@@ -315,10 +348,10 @@ static int snake_add_apple() {
 
 #ifndef NDEBUG
 void test__mode__snake() {
-    snake_piece test_piece = {.x = 12, .y = 13, .lfsr = 1, .direction = kSnakeDirectionRight};
+    snake_piece test_piece;
     TEST(
         display_clear(0, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
-        snake.half_size = 4;
+        snake.size = 9;
         test_piece.x = 12;
         test_piece.y = 13;
         test_piece.lfsr = 1;
@@ -327,12 +360,12 @@ void test__mode__snake() {
         for (int y = 0; y < LCD_ROWS; ++y) 
         for (int x = 0; x < LCD_COLUMNS; ++x) {
             TEST(
-                EXPECT_INT_EQUAL(display_pixel_collision(x, y), (
-                        y >= test_piece.y - snake.half_size
-                    &&  y <= test_piece.y + snake.half_size
-                    &&  x >= test_piece.x - snake.half_size
-                    &&  x <= test_piece.x + snake.half_size
-                    &&  (x != test_piece.x + 1 || y != test_piece.y)
+                EXPECT_INT_EQUAL_LOGGED(display_pixel_collision(x, y), (
+                        y >= test_piece.y
+                    &&  y < test_piece.y + snake.size
+                    &&  x >= test_piece.x
+                    &&  x < test_piece.x + snake.size
+                    &&  (x != test_piece.x + snake.size/2 + 1 || y != test_piece.y + snake.size/2)
                 )),
                 "%s: at (x, y) = (%d, %d)", AT, x, y
             );

@@ -14,8 +14,10 @@ enum snake_direction {
 };
 
 typedef struct snake_piece {
-    int x;          // 0 to 399 makes sense
-    int y;          // 0 to 239 makes sense
+    // left side of snake piece:
+    int x;          // roughly 0 to 399 makes sense
+    // top side of snake piece:
+    int y;          // roughly 0 to 239 makes sense
     uint32_t lfsr;  // for use with dizziness
     uint8_t direction;  // use snake_direction enum
 }
@@ -41,12 +43,14 @@ typedef struct snake_state {
 }
     snake_state;
 
+// TODO: make this into an `extern struct snake next_snake` (for any menu modifications)
+// and make the current `struct snake snake` a static internal value to snake.c
 struct snake {
     // starting length needs to be at least 2, since head
     // and tail need to be able to keep track of their state
     // by what's drawn on the screen.
     int starting_length;
-    int half_size;
+    int size;
     int dizziness;
     int inverse_speed;
     snake_state state;

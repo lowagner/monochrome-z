@@ -110,6 +110,7 @@ void display_box_draw(uint8_t color, display_box box) {
     }
     NORMALIZE_BOX(box);
 
+    // TODO: this still has some bugs, see snake.c test
     int first_full_byte = box.start_x / 8; // will become ceiling of box.start_x / 8
     int start_bits = box.start_x % 8;
     if (start_bits) ++first_full_byte;  // now first_full_byte is the ceiling.
