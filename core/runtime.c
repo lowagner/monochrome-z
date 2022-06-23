@@ -3,7 +3,7 @@
 #include "buttons.h"
 #include "playdate.h"   // for LCD_ROWS
 
-static int update(void *);
+static int update(void *unused);
 static void update_mode(int mode, display_slice slice);
 static void update_transition_modes(unsigned int transition_counter, int top_mode, int bottom_mode);
 
@@ -19,7 +19,7 @@ struct runtime runtime = {
 
 static int runtime_mode = kRuntimeModeWipe;
 
-static int update(void *) {
+static int update(void *unused) {
     buttons_update();
     if (runtime.transition.next_mode != runtime_mode) {
         runtime.transition.counter += runtime.transition.speed + 1;

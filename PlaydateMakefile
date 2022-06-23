@@ -14,10 +14,10 @@ endif
 # ex: VPATH += src1:src2
 ######
 
-VPATH += src ../library ../mode
+VPATH += src ../library ../mode ../core
 
 # List C source files here
-SRC = src/*.c ../core/*.c
+SRC = src/*.c $(wildcard ../core/*.c)
 SRC += $(addsuffix .c, $(addprefix ../library/, ${PD_PROJECT_LIBS}))
 SRC += $(addsuffix .c, $(addprefix ../mode/, ${PD_PROJECT_MODES}))
 
