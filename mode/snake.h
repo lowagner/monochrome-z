@@ -33,7 +33,6 @@ typedef struct snake_state {
     snake_piece tail;
     int size_delta;
     struct {
-        int x, y;
         display_box box;
         int present;
     }

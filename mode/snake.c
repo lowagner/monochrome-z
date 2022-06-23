@@ -167,7 +167,7 @@ static void snake_advance_head() {
             break;
         case kSnakeCollisionApple:
             ++snake.state.size_delta;
-            snake_clear(snake.state.apple.x, snake.state.apple.y);
+            snake_clear(snake.state.apple.box.start_x, snake.state.apple.box.start_y);
             snake.state.apple.present = 0;
             break;
     }
@@ -334,9 +334,8 @@ static int snake_check_collisions(const snake_piece *piece) {
 
 static void snake_maybe_add_apple() {
     if (!snake.state.apple.present)
-    for (int tries = 0; tries < 10; ++tries) {
+    for (int tries = 0; tries < 5; ++tries) {
         if (snake_add_apple()) {
-            snake.state.apple.present = 1;
             return;
         }
     }
@@ -344,8 +343,18 @@ static void snake_maybe_add_apple() {
 
 static int snake_add_apple() {
     // returns 0 if unsuccessful, otherwise 1.
-    // TODO
-    return 0;
+    int x = rand() % (LCD_COLUMNS - snake.size);
+    int y = rand() % (LCD_ROWS - snake.size);
+    snake.state.apple.box.start_x = x;
+    snake.state.apple.box.end_x = x + snake.size;
+    snake.state.apple.box.start_y = y;
+    snake.state.apple.box.end_y = y + snake.size;
+    if (display_box_collision(snake.state.apple.box)) {
+        return 0;
+    }
+    display_box_draw_alternating(85, 170, snake.state.apple.box);
+    snake.state.apple.present = 1;
+    return 1;
 }
 
 #ifndef NDEBUG
