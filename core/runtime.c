@@ -18,15 +18,22 @@ struct runtime runtime = {
 };
 
 static int runtime_mode = kRuntimeModeWipe;
+static int runtime_menu_count = 0;
 
 static int update(void *unused) {
     buttons_update();
     if (runtime.transition.next_mode != runtime_mode) {
+        if (runtime.transition.speed > 200) {
+            // make sure the old mode has a chance to react/clean up any resources
+            runtime.transition.speed = 200;
+        }
         runtime.transition.counter += runtime.transition.speed + 1;
         if (runtime.transition.counter >= LCD_ROWS) {
             runtime.transition.counter = 0;
             runtime_mode = runtime.transition.next_mode;
             playdate->system->logToConsole("finished transition to mode %d", runtime_mode);
+            playdate->system->removeAllMenuItems();
+            runtime_menu_count = 0;
             goto no_transition_update;
         }
         if (runtime.transition.up) {
@@ -118,4 +125,31 @@ int eventHandler(PlaydateAPI *pd, PDSystemEvent event, uint32_t argument) {
             break;
     }
     return 0;
+}
+
+void runtime_menu_callback(void *data) {
+    runtime_menu *menu = data;
+    if (menu->pd_menu == NULL) {
+        return;
+    }
+    menu->set_value_from_index(playdate->system->getMenuItemValue(menu->pd_menu));
+}
+
+int runtime_add_menu(runtime_menu *menu) {
+    if (runtime_menu_count >= 3) {
+        return 0;
+    }
+    ++runtime_menu_count;
+    menu->pd_menu = playdate->system->addOptionsMenuItem(
+        menu->title,
+        menu->options,
+        menu->option_count,
+        runtime_menu_callback,
+        menu
+    );
+    int option_index = menu->get_index_from_value();
+    if (option_index >= 0 && option_index < menu->option_count) {
+        playdate->system->setMenuItemValue(menu->pd_menu, option_index);
+    }
+    return 1;
 }

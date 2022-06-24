@@ -38,6 +38,25 @@ struct runtime {
 
 extern struct runtime runtime;
 
+typedef struct runtime_menu {
+    // will be set by calling runtime_add_menu.
+    // you can stop allowing callbacks to this method if you set this to NULL.
+    PDMenuItem *pd_menu;
+    const char *title;
+    const char **options;
+    int option_count;
+    // callback to set a value, assuming that options[index] has been chosen.
+    // called any time the menu is closed (and a different index has been chosen).
+    void (*set_value_from_index)(int index);
+    // returns the option index that the current value should correspond to.
+    // called once when the menu is created.
+    int (*get_index_from_value)(void);
+}
+    runtime_menu;
+
+// returns 1 if successful, otherwise 0.
+int runtime_add_menu(runtime_menu *menu);
+
 // You should define this in your main.c (or elsewhere).
 void default_update(display_slice slice);
 // You should also define this in your main.c (or elsewhere).
