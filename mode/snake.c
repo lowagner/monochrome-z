@@ -78,11 +78,11 @@ enum snake_collision {
 };
 
 void snake_speed_set_value(int index) {
-    next_snake.inverse_speed = 9 - index;
+    next_snake.inverse_speed = 11 - index;
 }
 
 int snake_speed_get_index() {
-    return 9 - next_snake.inverse_speed;
+    return 11 - next_snake.inverse_speed;
 }
 
 const char *snake_speed_options[] = {
@@ -95,13 +95,15 @@ const char *snake_speed_options[] = {
     "7",
     "8",
     "9",
+    "10",
+    "11",
 };
 
 runtime_menu snake_speed_menu = {
     .pd_menu = NULL,
     .title = "speed",
     .options = snake_speed_options,
-    .option_count = 9,
+    .option_count = 11,
     .set_value_from_index = snake_speed_set_value,
     .get_index_from_value = snake_speed_get_index,
 };
