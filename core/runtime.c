@@ -136,7 +136,7 @@ void runtime_menu_callback(void *data) {
 }
 
 int runtime_add_menu(runtime_menu *menu) {
-    if (runtime_menu_count >= 3) {
+    if (runtime_menu_count >= 3 || menu->option_count == 0) {
         return 0;
     }
     ++runtime_menu_count;
@@ -148,8 +148,11 @@ int runtime_add_menu(runtime_menu *menu) {
         menu
     );
     int option_index = menu->get_index_from_value();
-    if (option_index >= 0 && option_index < menu->option_count) {
-        playdate->system->setMenuItemValue(menu->pd_menu, option_index);
+    if (option_index < 0) {
+        option_index = 0;
+    } else if (option_index >= menu->option_count) {
+        option_index = menu->option_count - 1;
     }
+    playdate->system->setMenuItemValue(menu->pd_menu, option_index);
     return 1;
 }

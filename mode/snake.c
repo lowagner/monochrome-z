@@ -53,7 +53,7 @@ static void snake_maybe_add_apple();
 static int snake_add_apple();
 
 snake_info next_snake = {
-    .starting_length = 20,
+    .starting_length = 16,
     .size = 10,
     // TODO: add support for dizziness
     .dizziness = 0,
@@ -108,10 +108,51 @@ runtime_menu snake_speed_menu = {
     .get_index_from_value = snake_speed_get_index,
 };
 
+void snake_length_set_value(int index) {
+    next_snake.starting_length = 2 << index;
+}
+
+int snake_length_get_index() {
+    // lazy `log(length/2) / log(2)`
+    int length = next_snake.starting_length / 2;
+    int index = 0;
+    while (length / 2) {
+        length /= 2;
+        if (++index > 10) {
+            break;
+        }
+    }
+    return index;
+}
+
+const char *snake_length_options[] = {
+    "2",
+    "4",
+    "8",
+    "16",
+    "32",
+    "64",
+    "128",
+    "256",
+    "512",
+    "1024",
+    "2048",
+};
+
+runtime_menu snake_length_menu = {
+    .pd_menu = NULL,
+    .title = "length",
+    .options = snake_length_options,
+    .option_count = 11,
+    .set_value_from_index = snake_length_set_value,
+    .get_index_from_value = snake_length_get_index,
+};
+
 static void snake_initialize() {
     playdate->system->logToConsole("snake init");
 
     runtime_add_menu(&snake_speed_menu);
+    runtime_add_menu(&snake_length_menu);
 
     snake_needs_init = 0;
 }

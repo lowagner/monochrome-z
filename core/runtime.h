@@ -49,7 +49,7 @@ typedef struct runtime_menu {
     // called any time the menu is closed (and a different index has been chosen).
     void (*set_value_from_index)(int index);
     // returns the option index that the current value should correspond to.
-    // called once when the menu is created.
+    // called once when the menu is created.  will clamp to [0, option_count - 1].
     int (*get_index_from_value)(void);
 }
     runtime_menu;
