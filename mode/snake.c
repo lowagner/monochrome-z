@@ -148,11 +148,59 @@ runtime_menu snake_length_menu = {
     .get_index_from_value = snake_length_get_index,
 };
 
+const int snake_size_values[] = {
+    2,
+    4,
+    5,
+    8,
+    10,
+    16,
+    20,
+    40,
+};
+
+void snake_size_set_value(int index) {
+    if (index < 0) index = 0;
+    if (index > 7) index = 7;
+    next_snake.size = snake_size_values[index];
+}
+
+int snake_size_get_index() {
+    int index = -1;
+    while (++index < 8) {
+        if (next_snake.size <= snake_size_values[index]) {
+            break;
+        }
+    }
+    return index;
+}
+
+const char *snake_size_options[] = {
+    "2",
+    "4",
+    "5",
+    "8",
+    "10",
+    "16",
+    "20",
+    "40",
+};
+
+runtime_menu snake_size_menu = {
+    .pd_menu = NULL,
+    .title = "size",
+    .options = snake_size_options,
+    .option_count = 8,
+    .set_value_from_index = snake_size_set_value,
+    .get_index_from_value = snake_size_get_index,
+};
+
 static void snake_initialize() {
     playdate->system->logToConsole("snake init");
 
     runtime_add_menu(&snake_speed_menu);
     runtime_add_menu(&snake_length_menu);
+    runtime_add_menu(&snake_size_menu);
 
     snake_needs_init = 0;
 }
