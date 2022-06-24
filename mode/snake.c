@@ -5,6 +5,42 @@
 
 #include <string.h> // memcpy
 
+enum snake_direction {
+    kSnakeDirectionRight = 0,
+    kSnakeDirectionUp = 1,
+    kSnakeDirectionLeft = 2,
+    kSnakeDirectionDown = 3,
+};
+
+typedef struct snake_piece {
+    // left side of snake piece:
+    int x;          // roughly 0 to 399 makes sense
+    // top side of snake piece:
+    int y;          // roughly 0 to 239 makes sense
+    uint32_t lfsr;  // for use with dizziness
+    uint8_t direction;  // use snake_direction enum
+}
+    snake_piece;
+
+typedef struct snake_state {
+    int counter;
+    // don't modify the direction on head.direction until
+    // we actually advance the snake, so we can see if we
+    // want to move diagonally:
+    int desired_direction;
+    snake_piece head;
+    snake_piece tail;
+    int size_delta;
+    struct {
+        display_box box;
+        int present;
+    }
+        apple;
+    int game_over;
+    uint64_t score;
+}
+    snake_state;
+
 static void snake_advance();
 static void snake_advance_head();
 static void snake_advance_tail();
@@ -16,7 +52,13 @@ static int snake_check_collisions(const snake_piece *piece);
 static void snake_maybe_add_apple();
 static int snake_add_apple();
 
-struct snake snake;
+snake_info next_snake;
+
+static struct snake {
+    snake_info info;
+    snake_state state;
+}
+    snake;
 
 static int snake_needs_init = 1;
 static int snake_needs_reset = 1;
@@ -31,35 +73,36 @@ enum snake_collision {
 
 void snake_initialize() {
     playdate->system->logToConsole("snake init");
-    snake.starting_length = 20;
-    snake.size = 10;
+    next_snake.starting_length = 20;
+    next_snake.size = 10;
     // TODO: add support for dizziness
-    snake.dizziness = 0;
-    snake.inverse_speed = 3;
+    next_snake.dizziness = 0;
+    next_snake.inverse_speed = 3;
 
     snake_needs_init = 0;
 }
 
 void snake_reset() {
     playdate->system->logToConsole("snake reset");
-    if (snake.size < 2) {
-        snake.size = 2;
-    } else if (snake.size > 40) {
-        snake.size = 40;
+    snake.info = next_snake;
+    if (snake.info.size < 2) {
+        snake.info.size = 2;
+    } else if (snake.info.size > 40) {
+        snake.info.size = 40;
     }
     snake.state = (snake_state){
         .counter = 0,
         .desired_direction = kSnakeDirectionRight,
         .head = (snake_piece){
-            .x = 4 * snake.size,
-            .y = 4 * snake.size,
+            .x = 4 * snake.info.size,
+            .y = 4 * snake.info.size,
             // TODO: set from getMilliseconds
             .lfsr = 1,
             .direction = kSnakeDirectionRight,
         },
         // size will be at least 2, and we'll increment to size 2 in this reset
         // method (see snake_advance_piece_no_draw), so only count delta above that:
-        .size_delta = snake.starting_length > 2 ? snake.starting_length - 2 : 0,
+        .size_delta = next_snake.starting_length > 2 ? next_snake.starting_length - 2 : 0,
         .game_over = 0,
         .score = 0,
     };
@@ -125,7 +168,7 @@ void snake_update(display_slice slice) {
             }
         }
         
-        if (++snake.state.counter < snake.inverse_speed) {
+        if (++snake.state.counter < snake.info.inverse_speed) {
             // other logic while we wait for snake to move.
             snake_maybe_add_apple();
         } else {
@@ -190,31 +233,31 @@ static void snake_advance_piece_no_draw(snake_piece *piece) {
     // or the head (where we want to check collisions first).
     int delta_direction = 0;
     int delta_orthogonal = 0;
-    if (snake.dizziness) {
+    if (snake.info.dizziness) {
         lfsr32_next(&piece->lfsr);
         // TODO: affect delta_direction and delta_orthogonal.
-        // delta_direction should be between -max(snake.size - 3, 0) and 0,
+        // delta_direction should be between -max(snake.info.size - 3, 0) and 0,
         // and should get more negative when delta_orthogonal is larger.
-        // delta_orthogonal should be in +-(snake.size - 1)
-        //int max_delta = snake.size - 1;
+        // delta_orthogonal should be in +-(snake.info.size - 1)
+        //int max_delta = snake.info.size - 1;
         uint32_t random_walk = piece->lfsr;
     }
     switch (piece->direction) {
         case kSnakeDirectionRight:
-            piece->x += snake.size + delta_direction;
+            piece->x += snake.info.size + delta_direction;
             piece->y += delta_orthogonal;
             break;
         case kSnakeDirectionUp:
             piece->x -= delta_orthogonal;
-            piece->y -= snake.size + delta_direction;
+            piece->y -= snake.info.size + delta_direction;
             break;
         case kSnakeDirectionLeft:
-            piece->x -= snake.size + delta_direction;
+            piece->x -= snake.info.size + delta_direction;
             piece->y -= delta_orthogonal;
             break;
         case kSnakeDirectionDown:
             piece->x += delta_orthogonal;
-            piece->y += snake.size + delta_direction;
+            piece->y += snake.info.size + delta_direction;
             break;
         default:
             snake.state.game_over = GAME_OVER;
@@ -231,8 +274,8 @@ static void snake_clear(int left_x, int top_y) {
     display_box_draw(0, (display_box){
         .start_x = left_x,
         .start_y = top_y,
-        .end_x = left_x + snake.size,
-        .end_y = top_y + snake.size,
+        .end_x = left_x + snake.info.size,
+        .end_y = top_y + snake.info.size,
     });
 }
 
@@ -241,11 +284,11 @@ static void snake_draw(const snake_piece *piece) {
     display_box_draw(255, (display_box){
         .start_x = piece->x,
         .start_y = piece->y,
-        .end_x = piece->x + snake.size,
-        .end_y = piece->y + snake.size,
+        .end_x = piece->x + snake.info.size,
+        .end_y = piece->y + snake.info.size,
     });
-    int half_size = snake.size / 2;
-    if (snake.size % 2) {
+    int half_size = snake.info.size / 2;
+    if (snake.info.size % 2) {
         switch (piece->direction) {
             case kSnakeDirectionRight:
                 display_pixel_clear(piece->x + half_size + 1, piece->y + half_size);
@@ -281,8 +324,8 @@ static void snake_draw(const snake_piece *piece) {
 static void snake_read_direction_from_trail(snake_piece *piece) {
     // could optimize for current heading (piece->direction),
     // i.e., since you can't go backwards, but that makes the code a bit messy.
-    int half_size = snake.size / 2;
-    if (snake.size % 2) {
+    int half_size = snake.info.size / 2;
+    if (snake.info.size % 2) {
         if (!display_pixel_collision(piece->x + half_size + 1, piece->y + half_size)) {
             piece->direction = kSnakeDirectionRight;
         } else if (!display_pixel_collision(piece->x + half_size, piece->y + half_size - 1)) { 
@@ -316,8 +359,8 @@ static int snake_check_collisions(const snake_piece *piece) {
     display_box snake_box = {
         .start_x = piece->x,
         .start_y = piece->y,
-        .end_x = piece->x + snake.size,
-        .end_y = piece->y + snake.size,
+        .end_x = piece->x + snake.info.size,
+        .end_y = piece->y + snake.info.size,
     };
     int display_collision = display_box_collision(snake_box);
     if (!display_collision) {
@@ -343,12 +386,12 @@ static void snake_maybe_add_apple() {
 
 static int snake_add_apple() {
     // returns 0 if unsuccessful, otherwise 1.
-    int x = rand() % (LCD_COLUMNS - snake.size);
-    int y = rand() % (LCD_ROWS - snake.size);
+    int x = rand() % (LCD_COLUMNS - snake.info.size);
+    int y = rand() % (LCD_ROWS - snake.info.size);
     snake.state.apple.box.start_x = x;
-    snake.state.apple.box.end_x = x + snake.size;
+    snake.state.apple.box.end_x = x + snake.info.size;
     snake.state.apple.box.start_y = y;
-    snake.state.apple.box.end_y = y + snake.size;
+    snake.state.apple.box.end_y = y + snake.info.size;
     if (display_box_collision(snake.state.apple.box)) {
         return 0;
     }
@@ -362,7 +405,7 @@ void test__mode__snake() {
     snake_piece test_piece;
     TEST(
         display_clear(0, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
-        snake.size = 9;
+        snake.info.size = 9;
         test_piece.x = 12;
         test_piece.y = 13;
         test_piece.lfsr = 1;
@@ -373,10 +416,10 @@ void test__mode__snake() {
             TEST(
                 EXPECT_INT_EQUAL_LOGGED(display_pixel_collision(x, y), (
                         y >= test_piece.y
-                    &&  y < test_piece.y + snake.size
+                    &&  y < test_piece.y + snake.info.size
                     &&  x >= test_piece.x
-                    &&  x < test_piece.x + snake.size
-                    &&  (x != test_piece.x + snake.size/2 + 1 || y != test_piece.y + snake.size/2)
+                    &&  x < test_piece.x + snake.info.size
+                    &&  (x != test_piece.x + snake.info.size/2 + 1 || y != test_piece.y + snake.info.size/2)
                 )),
                 "%s: at (x, y) = (%d, %d)", AT, x, y
             );
