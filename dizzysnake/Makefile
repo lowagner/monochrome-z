@@ -9,7 +9,11 @@ run: Source
 	@echo "===================================="
 	@echo "Building project $${PD_PROJECT_NAME}"
 	@echo "===================================="
+	mkdir -p $${PD_PROJECT_NAME}.pdx
+	touch $${PD_PROJECT_NAME}.pdx/pdxinfo
+	cp $${PD_PROJECT_NAME}.pdx/pdxinfo bakup-pdxinfo
 	make -f ../PlaydateMakefile pdc && $${PLAYDATE_SDK_PATH}/bin/PlaydateSimulator $${PD_PROJECT_NAME}.pdx
+	mv bakup-pdxinfo $${PD_PROJECT_NAME}.pdx/pdxinfo
 
 device: Source
 	@echo "===================================="
