@@ -19,8 +19,6 @@ typedef struct snake_info {
 
 extern snake_info next_snake;
 
-void snake_initialize();
-void snake_reset();
 void snake_update(display_slice slice);
 
 #endif

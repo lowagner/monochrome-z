@@ -52,7 +52,13 @@ static int snake_check_collisions(const snake_piece *piece);
 static void snake_maybe_add_apple();
 static int snake_add_apple();
 
-snake_info next_snake;
+snake_info next_snake = {
+    .starting_length = 20,
+    .size = 10,
+    // TODO: add support for dizziness
+    .dizziness = 0,
+    .inverse_speed = 3,
+};
 
 static struct snake {
     snake_info info;
@@ -71,13 +77,39 @@ enum snake_collision {
     kSnakeCollisionApple,
 };
 
-void snake_initialize() {
+void snake_speed_set_value(int index) {
+    next_snake.inverse_speed = 9 - index;
+}
+
+int snake_speed_get_index() {
+    return 9 - next_snake.inverse_speed;
+}
+
+const char *snake_speed_options[] = {
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+};
+
+runtime_menu snake_speed_menu = {
+    .pd_menu = NULL,
+    .title = "speed",
+    .options = snake_speed_options,
+    .option_count = 9,
+    .set_value_from_index = snake_speed_set_value,
+    .get_index_from_value = snake_speed_get_index,
+};
+
+static void snake_initialize() {
     playdate->system->logToConsole("snake init");
-    next_snake.starting_length = 20;
-    next_snake.size = 10;
-    // TODO: add support for dizziness
-    next_snake.dizziness = 0;
-    next_snake.inverse_speed = 3;
+
+    runtime_add_menu(&snake_speed_menu);
 
     snake_needs_init = 0;
 }
@@ -115,6 +147,12 @@ void snake_reset() {
 
 void snake_update(display_slice slice) {
     if (runtime.transition.counter) {
+        if (runtime.transition.next_mode != kRuntimeModeSnake) {
+            // we'll need to add back menus next time, since
+            // runtime will clear any PD menus.
+            snake_needs_init = 1;
+            snake_speed_menu.pd_menu = NULL;
+        }
         // we rely on the display pixels to contain the game state, so
         // unless we have the full display to work with, don't do anything else:
         snake_needs_reset = 1;
