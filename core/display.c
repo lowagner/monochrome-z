@@ -20,33 +20,32 @@ static inline uint8_t *display() {
     return playdate->graphics->getFrame();
 }
 
-// pass in a pre-computed (pre-inverted) color here.
-// i.e., real_color = display_maybe_invert_color(color).
+// use 0 for inverted (black bg with white fg), 255 for not inverted (white bg with black fg).
+static uint8_t display_inversion = 255;
+
+void display_invert() {
+    uint8_t *display_buffer = display();
+    for (int byte = 0; byte < LCD_ROWS * ROW_STRIDE; ++byte) {
+        *display_buffer = ~*display_buffer;
+        ++display_buffer;
+    }
+    display_inversion = 255 - display_inversion;
+    playdate->graphics->markUpdatedRows(0, LCD_ROWS - 1);
+}
+
 static inline void display_byte_draw_with_mask(
     uint8_t *buffer_at_byte,
     uint8_t mask,
-    uint8_t real_color
+    uint8_t color
 ) {
-    *buffer_at_byte = (*buffer_at_byte & ~mask) | (real_color & mask);
+    *buffer_at_byte = (*buffer_at_byte & ~mask) | ((color ^ display_inversion) & mask);
 }
 
-static inline uint8_t display_inversion() {
-    // TODO: send 0 if inverted
-    return 255;
-}
-
-static inline uint8_t display_maybe_invert_color(uint8_t color) {
-    return color ^ display_inversion();
-}
-
-// pass in a pre-computed inversion here.
-// i.e., inversion = display_inversion().
 static inline uint8_t display_byte_collision_with_mask(
     uint8_t byte,
-    uint8_t mask,
-    uint8_t inversion
+    uint8_t mask
 ) {
-    return (byte ^ inversion) & mask;
+    return (byte ^ display_inversion) & mask;
 }
 
 void display_clear(uint8_t bg_color, display_slice slice) {
@@ -57,7 +56,7 @@ void display_clear(uint8_t bg_color, display_slice slice) {
     uint8_t *display_buffer = display();
     memset(
         display_buffer + ROW_STRIDE * slice.start_row,
-        display_maybe_invert_color(bg_color),
+        bg_color ^ display_inversion,
         ROW_STRIDE * (slice.end_row - slice.start_row)
     );
     playdate->graphics->markUpdatedRows(slice.start_row, slice.end_row - 1);
@@ -67,8 +66,8 @@ void display_clear_alternating(uint8_t bg_color0, uint8_t bg_color1, display_sli
     if (slice.start_row >= slice.end_row || slice.start_row >= LCD_ROWS) {
         return;
     }
-    bg_color0 = display_maybe_invert_color(bg_color0);
-    bg_color1 = display_maybe_invert_color(bg_color1);
+    bg_color0 = bg_color0 ^ display_inversion;
+    bg_color1 = bg_color1 ^ display_inversion;
     // TODO: check for end_row past LCD_ROWS
     uint8_t *display_row = display() + ROW_STRIDE * slice.start_row;
     for (int row = slice.start_row; row < slice.end_row; ++row) {
@@ -134,7 +133,7 @@ void display_box_draw_multicolor(int color_count, uint8_t *row_colors, display_b
                 display_byte_draw_with_mask(
                     display_buffer + ROW_STRIDE * row + first_full_byte - 1,
                     mask,
-                    display_maybe_invert_color(row_colors[row % color_count])
+                    row_colors[row % color_count]
                 );
             }
         }
@@ -142,7 +141,7 @@ void display_box_draw_multicolor(int color_count, uint8_t *row_colors, display_b
         for (int16_t row = box.start_y; row < box.end_y; ++row) {
             memset(
                 display_buffer + ROW_STRIDE * row + first_full_byte,
-                display_maybe_invert_color(row_colors[row % color_count]),
+                row_colors[row % color_count] ^ display_inversion,
                 last_full_byte - first_full_byte
             );
         }
@@ -152,7 +151,7 @@ void display_box_draw_multicolor(int color_count, uint8_t *row_colors, display_b
                 display_byte_draw_with_mask(
                     display_buffer + ROW_STRIDE * row + last_full_byte,
                     mask,
-                    display_maybe_invert_color(row_colors[row % color_count])
+                    row_colors[row % color_count]
                 );
             }
         }
@@ -165,7 +164,7 @@ void display_box_draw_multicolor(int color_count, uint8_t *row_colors, display_b
             display_byte_draw_with_mask(
                 display_buffer + ROW_STRIDE * row + last_full_byte,
                 mask,
-                display_maybe_invert_color(row_colors[row % color_count])
+                row_colors[row % color_count]
             );
         }
     }
@@ -190,7 +189,6 @@ int display_box_collision(display_box box) {
     int last_bits = box.end_x % 8;
 
     uint8_t *const display_buffer = display();
-    const uint8_t inversion = display_inversion();
 
     if (last_full_byte >= first_full_byte) {
         if (start_bits) {
@@ -198,8 +196,7 @@ int display_box_collision(display_box box) {
             for (int16_t row = box.start_y; row < box.end_y; ++row) {
                 if (display_byte_collision_with_mask(
                     display_buffer[ROW_STRIDE * row + first_full_byte - 1],
-                    mask,
-                    inversion
+                    mask
                 )) {
                     return 1;
                 }
@@ -210,8 +207,7 @@ int display_box_collision(display_box box) {
         for (int byte = first_full_byte; byte < last_full_byte; ++byte) {
             if (display_byte_collision_with_mask(
                 display_buffer[ROW_STRIDE * row + byte],
-                255,
-                inversion
+                255
             )) {
                 return 1;
             }
@@ -221,8 +217,7 @@ int display_box_collision(display_box box) {
             for (int16_t row = box.start_y; row < box.end_y; ++row) {
                 if (display_byte_collision_with_mask(
                     display_buffer[ROW_STRIDE * row + last_full_byte],
-                    mask,
-                    inversion
+                    mask
                 )) {
                     return 1;
                 }
@@ -236,8 +231,7 @@ int display_box_collision(display_box box) {
         for (int16_t row = box.start_y; row < box.end_y; ++row) {
             if (display_byte_collision_with_mask(
                 display_buffer[ROW_STRIDE * row + last_full_byte],
-                mask,
-                inversion
+                mask
             )) {
                 return 1;
             }
@@ -257,19 +251,18 @@ int display_box_box_collision(display_box box1, display_box box2) {
     );
 }
 
-void display_pixel_draw(int x, int y) {
+static void display_pixel_draw_black(int x, int y) {
     if (x < 0 || x >= LCD_COLUMNS || y < 0 || y >= LCD_ROWS) {
         return;
     }
     uint8_t *row_buffer = display() + ROW_STRIDE * y;
     int byte = x / 8;
     int bit = 7 - (x % 8); // most-significant-bits are left-most.
-    // TODO: for inversion, we can't use & here.
     row_buffer[byte] &= ~(1 << bit);
-    //playdate->graphics->markUpdatedRows(y, y);
+    playdate->graphics->markUpdatedRows(y, y);
 }
 
-void display_pixel_clear(int x, int y) {
+static void display_pixel_draw_white(int x, int y) {
     playdate->system->logToConsole("* clear pxl %d, %d", x, y);
     if (x < 0 || x >= LCD_COLUMNS || y < 0 || y >= LCD_ROWS) {
         return;
@@ -277,9 +270,24 @@ void display_pixel_clear(int x, int y) {
     uint8_t *row_buffer = display() + ROW_STRIDE * y;
     int byte = x / 8;
     int bit = 7 - (x % 8); // most-significant-bits are left-most.
-    // TODO: for inversion, we can't use | here.
     row_buffer[byte] |= 1 << bit;
     playdate->graphics->markUpdatedRows(y, y);
+}
+
+void display_pixel_draw(int x, int y) {
+    if (display_inversion) {
+        display_pixel_draw_black(x, y);
+    } else {
+        display_pixel_draw_white(x, y);
+    }
+}
+
+void display_pixel_clear(int x, int y) {
+    if (display_inversion) {
+        display_pixel_draw_white(x, y);
+    } else {
+        display_pixel_draw_black(x, y);
+    }
 }
 
 int display_pixel_collision(int x, int y) {
@@ -289,7 +297,7 @@ int display_pixel_collision(int x, int y) {
     const uint8_t *row_buffer = display() + ROW_STRIDE * y;
     int byte = x / 8;
     int bit = 7 - (x % 8); // most-significant-bits are left-most.
-    return ((row_buffer[byte] ^ display_inversion()) >> bit) & 1;
+    return ((row_buffer[byte] ^ display_inversion) >> bit) & 1;
 }
 
 #ifndef NDEBUG

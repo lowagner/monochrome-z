@@ -2,9 +2,6 @@
 
 #include <stdint.h>
 
-// TODO: add an display struct with inversion
-// essentially use ~ everywhere when not inverted and nothing when inverted
-
 typedef struct display_slice {
     // start drawing here:
     uint8_t start_row;
@@ -25,6 +22,7 @@ typedef struct display_box {
 }
     display_box;
 
+void display_invert();
 void display_clear(uint8_t bg_color, display_slice slice);
 void display_clear_alternating(uint8_t bg_color0, uint8_t bg_color1, display_slice slice);
 
