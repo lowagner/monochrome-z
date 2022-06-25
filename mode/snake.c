@@ -317,6 +317,10 @@ void snake_advance() {
     snake_advance_head();
     if (snake.state.size_delta == 0) {
         snake_advance_tail();
+        if (snake.state.game_over) {
+            // ensure that the head is visible, in case the head crashed into the tail.
+            snake_draw_no_trail(&snake.state.head);
+        }
     } else if (snake.state.size_delta > 0) {
         // draw tail back since we cleared it for narrow misses (see comment above).
         snake_draw_tail(&snake.state.tail);
