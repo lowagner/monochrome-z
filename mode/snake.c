@@ -48,6 +48,7 @@ static void snake_advance_piece_no_draw(snake_piece *piece);
 static void snake_clear(int left_x, int top_y);
 static void snake_draw_no_trail(const snake_piece *piece);
 static void snake_draw(const snake_piece *piece);
+static void snake_draw_tail(const snake_piece *piece);
 static void snake_read_direction_from_trail(snake_piece *piece);
 static int snake_check_collisions(const snake_piece *piece);
 static void snake_maybe_add_apple();
@@ -258,7 +259,7 @@ void snake_update(display_slice slice) {
 
         display_clear(0, slice);
         snake_draw_no_trail(&snake.state.head);
-        snake_draw(&snake.state.tail);
+        snake_draw_tail(&snake.state.tail);
     } else {
         snake_game_loop();
     }
@@ -318,7 +319,7 @@ void snake_advance() {
         snake_advance_tail();
     } else if (snake.state.size_delta > 0) {
         // draw tail back since we cleared it for narrow misses (see comment above).
-        snake_draw(&snake.state.tail);
+        snake_draw_tail(&snake.state.tail);
         --snake.state.size_delta;
     } else {
         // TODO: support this, maybe, but require having at least length == 2
@@ -353,11 +354,13 @@ static void snake_advance_head() {
 
 static void snake_advance_tail() {
     playdate->system->logToConsole("adv snk tail from %d, %d", snake.state.tail.x, snake.state.tail.y);
+    // don't need to clear the tail since that is done in snake_advance to avoid narrow misses
+    // with the head.
     snake_advance_piece_no_draw(&snake.state.tail);
     snake_read_direction_from_trail(&snake.state.tail);
     // clearing might have gotten rid of part of the new tail (dizziness),
     // make sure to put it back, only AFTER we've read the direction from the trail.
-    snake_draw(&snake.state.tail);
+    snake_draw_tail(&snake.state.tail);
 }
 
 static void snake_advance_piece_no_draw(snake_piece *piece) {
@@ -454,6 +457,61 @@ static void snake_draw(const snake_piece *piece) {
                 display_pixel_clear(piece->x + half_size, piece->y + half_size);
                 break;
         }
+    }
+}
+
+static void snake_draw_tail(const snake_piece *piece) {
+    snake_draw(piece);
+    if (snake.info.size <= 2) {
+        return;
+    }
+    int delta = snake.info.size - 1;
+    switch (piece->direction) {
+        case kSnakeDirectionRight:
+            display_pixel_clear(piece->x, piece->y);
+            display_pixel_clear(piece->x, piece->y + delta);
+            break;
+        case kSnakeDirectionUp:
+            display_pixel_clear(piece->x, piece->y + delta);
+            display_pixel_clear(piece->x + delta, piece->y + delta);
+            break;
+        case kSnakeDirectionLeft:
+            display_pixel_clear(piece->x + delta, piece->y);
+            display_pixel_clear(piece->x + delta, piece->y + delta);
+            break;
+        case kSnakeDirectionDown:
+            display_pixel_clear(piece->x, piece->y);
+            display_pixel_clear(piece->x + delta, piece->y);
+            break;
+    }
+    if (snake.info.size <= 5) {
+        return;
+    }
+    switch (piece->direction) {
+        case kSnakeDirectionRight:
+            display_pixel_clear(piece->x + 1, piece->y);
+            display_pixel_clear(piece->x, piece->y + 1);
+            display_pixel_clear(piece->x, piece->y + delta - 1);
+            display_pixel_clear(piece->x + 1, piece->y + delta);
+            break;
+        case kSnakeDirectionUp:
+            display_pixel_clear(piece->x, piece->y + delta - 1);
+            display_pixel_clear(piece->x + delta, piece->y + delta - 1);
+            display_pixel_clear(piece->x + 1, piece->y + delta);
+            display_pixel_clear(piece->x + delta - 1, piece->y + delta);
+            break;
+        case kSnakeDirectionLeft:
+            display_pixel_clear(piece->x + delta - 1, piece->y);
+            display_pixel_clear(piece->x + delta - 1, piece->y + delta);
+            display_pixel_clear(piece->x + delta, piece->y + 1);
+            display_pixel_clear(piece->x + delta, piece->y + delta - 1);
+            break;
+        case kSnakeDirectionDown:
+            display_pixel_clear(piece->x + 1, piece->y);
+            display_pixel_clear(piece->x + delta - 1, piece->y);
+            display_pixel_clear(piece->x, piece->y + 1);
+            display_pixel_clear(piece->x + delta, piece->y + 1);
+            break;
     }
 }
 
