@@ -236,6 +236,8 @@ void snake_reset() {
     snake_needs_reset = 0;
 }
 
+static void snake_game_loop();
+
 void snake_update(display_slice slice) {
     if (runtime.transition.counter) {
         if (runtime.transition.next_mode != kRuntimeModeSnake) {
@@ -256,38 +258,51 @@ void snake_update(display_slice slice) {
         display_clear(0, slice);
         snake_draw(&snake.state.head);
         snake_draw(&snake.state.tail);
-    } else if (snake.state.game_over) {
+    } else {
+        snake_game_loop();
+    }
+}
+
+static void snake_game_loop() {
+    if (buttons.pushed & kButtonA) {
+        display_invert();
+    }
+    if (snake.state.game_over) {
+        if (snake.state.game_over == GAME_OVER) {
+            display_invert();
+        }
         playdate->system->logToConsole("snake game over %d", snake.state.game_over);
         // wait before resetting:
         if (--snake.state.game_over <= 0) {
             snake_needs_reset = 1;
+            display_invert();
         }
+        return;
+    }
+    // actual game playing:
+    int x_axis = (
+            ( (buttons.current & kButtonLeft) ? -1 : 0 )
+        +   ( (buttons.current & kButtonRight) ? +1 : 0 )
+    );
+    int y_axis = (
+            ( (buttons.current & kButtonUp) ? -1 : 0 )
+        +   ( (buttons.current & kButtonDown) ? +1 : 0 )
+    );
+    if (x_axis && (snake.state.head.direction & 1) == 1) {
+        // snake was traveling in the y direction, so we can switch to the x direction:
+        snake.state.desired_direction = -x_axis + 1;
+    } else if (y_axis && (snake.state.head.direction & 1) == 0) {
+        // snake was traveling in the x direction, so we can switch to the y direction:
+        snake.state.desired_direction = y_axis + 2;
+    }
+    
+    if (++snake.state.counter < snake.info.inverse_speed) {
+        // other logic while we wait for snake to move.
+        snake_maybe_add_apple();
     } else {
-        // actual game playing:
-        int x_axis = (
-                ( (buttons.current & kButtonLeft) ? -1 : 0 )
-            +   ( (buttons.current & kButtonRight) ? +1 : 0 )
-        );
-        int y_axis = (
-                ( (buttons.current & kButtonUp) ? -1 : 0 )
-            +   ( (buttons.current & kButtonDown) ? +1 : 0 )
-        );
-        if (x_axis && (snake.state.head.direction & 1) == 1) {
-            // snake was traveling in the y direction, so we can switch to the x direction:
-            snake.state.desired_direction = -x_axis + 1;
-        } else if (y_axis && (snake.state.head.direction & 1) == 0) {
-            // snake was traveling in the x direction, so we can switch to the y direction:
-            snake.state.desired_direction = y_axis + 2;
-        }
-        
-        if (++snake.state.counter < snake.info.inverse_speed) {
-            // other logic while we wait for snake to move.
-            snake_maybe_add_apple();
-        } else {
-            snake.state.counter = 0;
-            snake_advance();
-            snake_maybe_add_apple();
-        }
+        snake.state.counter = 0;
+        snake_advance();
+        snake_maybe_add_apple();
     }
 }
 
