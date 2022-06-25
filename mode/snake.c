@@ -46,6 +46,7 @@ static void snake_advance_head();
 static void snake_advance_tail();
 static void snake_advance_piece_no_draw(snake_piece *piece);
 static void snake_clear(int left_x, int top_y);
+static void snake_draw_no_trail(const snake_piece *piece);
 static void snake_draw(const snake_piece *piece);
 static void snake_read_direction_from_trail(snake_piece *piece);
 static int snake_check_collisions(const snake_piece *piece);
@@ -256,7 +257,7 @@ void snake_update(display_slice slice) {
         snake_reset();
 
         display_clear(0, slice);
-        snake_draw(&snake.state.head);
+        snake_draw_no_trail(&snake.state.head);
         snake_draw(&snake.state.tail);
     } else {
         snake_game_loop();
@@ -309,10 +310,15 @@ static void snake_game_loop() {
 void snake_advance() {
     playdate->system->logToConsole("advancing snake from (%d, %d)", snake.state.head.x, snake.state.head.y);
     snake.state.head.direction = snake.state.desired_direction;
+    // let the tail move first so that the head can do a narrow miss.
+    // we might need to draw it back later, though, if the snake grew by eating an apple.
+    snake_clear(snake.state.tail.x, snake.state.tail.y);
     snake_advance_head();
     if (snake.state.size_delta == 0) {
         snake_advance_tail();
     } else if (snake.state.size_delta > 0) {
+        // draw tail back since we cleared it for narrow misses (see comment above).
+        snake_draw(&snake.state.tail);
         --snake.state.size_delta;
     } else {
         // TODO: support this, maybe, but require having at least length == 2
@@ -342,12 +348,11 @@ static void snake_advance_head() {
             break;
     }
     snake_draw(&old_snake_head);
-    snake_draw(&snake.state.head);
+    snake_draw_no_trail(&snake.state.head);
 }
 
 static void snake_advance_tail() {
     playdate->system->logToConsole("adv snk tail from %d, %d", snake.state.tail.x, snake.state.tail.y);
-    snake_clear(snake.state.tail.x, snake.state.tail.y);
     snake_advance_piece_no_draw(&snake.state.tail);
     snake_read_direction_from_trail(&snake.state.tail);
     // clearing might have gotten rid of part of the new tail (dizziness),
@@ -406,7 +411,7 @@ static void snake_clear(int left_x, int top_y) {
     });
 }
 
-static void snake_draw(const snake_piece *piece) {
+static void snake_draw_no_trail(const snake_piece *piece) {
     playdate->system->logToConsole("drw snk piece %d, %d", piece->x, piece->y);
     display_box_draw(255, (display_box){
         .start_x = piece->x,
@@ -414,6 +419,10 @@ static void snake_draw(const snake_piece *piece) {
         .end_x = piece->x + snake.info.size,
         .end_y = piece->y + snake.info.size,
     });
+}
+
+static void snake_draw(const snake_piece *piece) {
+    snake_draw_no_trail(piece);
     int half_size = snake.info.size / 2;
     if (snake.info.size % 2) {
         switch (piece->direction) {
