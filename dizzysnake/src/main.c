@@ -18,6 +18,7 @@ void initialize() {
     #endif
     font_load("/System/Fonts/Asheville-Sans-14-Bold.pft");
     runtime.transition.next_mode = kRuntimeModeSnake;
+    runtime.transition.speed = 10;
 }
 
 void default_update(display_slice slice) {

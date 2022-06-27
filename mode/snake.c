@@ -19,11 +19,14 @@ typedef struct snake_piece {
     int y;          // roughly 0 to 239 makes sense
     uint32_t lfsr;  // for use with dizziness
     uint8_t direction;  // use snake_direction enum
+    uint8_t dizzy;  // read from the trail.
 }
     snake_piece;
 
 typedef struct snake_state {
     int counter;
+    int current_length;
+    int dizziness;
     // don't modify the direction on head.direction until
     // we actually advance the snake, so we can see if we
     // want to move diagonally:
@@ -45,11 +48,12 @@ static void snake_advance();
 static void snake_advance_head();
 static void snake_advance_tail();
 static void snake_advance_piece_no_draw(snake_piece *piece);
+static void snake_add_random_walk(snake_piece *piece, int *delta_direction, int *delta_orthogonal);
 static void snake_clear(int left_x, int top_y);
 static void snake_draw_no_trail(const snake_piece *piece);
 static void snake_draw(const snake_piece *piece);
 static void snake_draw_tail(const snake_piece *piece);
-static void snake_read_direction_from_trail(snake_piece *piece);
+static void snake_read_direction_and_dizziness_from_trail(snake_piece *piece);
 static int snake_check_collisions(const snake_piece *piece);
 static void snake_maybe_add_apple();
 static int snake_add_apple();
@@ -215,8 +219,11 @@ void snake_reset() {
     } else if (snake.info.size > 40) {
         snake.info.size = 40;
     }
+    // require being at least 2 units long:
+    next_snake.starting_length = next_snake.starting_length > 2 ? next_snake.starting_length : 2;
     snake.state = (snake_state){
         .counter = 0,
+        .current_length = next_snake.starting_length,
         .desired_direction = kSnakeDirectionRight,
         .head = (snake_piece){
             .x = 4 * snake.info.size,
@@ -224,10 +231,11 @@ void snake_reset() {
             // TODO: set from getMilliseconds
             .lfsr = 1,
             .direction = kSnakeDirectionRight,
+            .dizzy = next_snake.dizziness,
         },
         // size will be at least 2, and we'll increment to size 2 in this reset
         // method (see snake_advance_piece_no_draw), so only count delta above that:
-        .size_delta = next_snake.starting_length > 2 ? next_snake.starting_length - 2 : 0,
+        .size_delta = next_snake.starting_length - 2,
         .game_over = 0,
         .score = 0,
     };
@@ -268,6 +276,17 @@ void snake_update(display_slice slice) {
 static void snake_game_loop() {
     if (buttons.pushed & kButtonA) {
         display_invert();
+    }
+    if (buttons.pushed & kButtonB) {
+        // let pushing this button affect the next run as well.
+        // note that snake.info.dizziness is ignored since we need to have dizziness
+        // on a per-segment basis (since we can switch dizziness on and off).
+        if (next_snake.dizziness) {
+            next_snake.dizziness = 0;
+        } else {
+            next_snake.dizziness = 1;
+        }
+        snake.state.head.dizzy = next_snake.dizziness;
     }
     if (snake.state.game_over) {
         if (snake.state.game_over == GAME_OVER) {
@@ -361,7 +380,7 @@ static void snake_advance_tail() {
     // don't need to clear the tail since that is done in snake_advance to avoid narrow misses
     // with the head.
     snake_advance_piece_no_draw(&snake.state.tail);
-    snake_read_direction_from_trail(&snake.state.tail);
+    snake_read_direction_and_dizziness_from_trail(&snake.state.tail);
     // clearing might have gotten rid of part of the new tail (dizziness),
     // make sure to put it back, only AFTER we've read the direction from the trail.
     snake_draw_tail(&snake.state.tail);
@@ -372,14 +391,8 @@ static void snake_advance_piece_no_draw(snake_piece *piece) {
     // or the head (where we want to check collisions first).
     int delta_direction = 0;
     int delta_orthogonal = 0;
-    if (snake.info.dizziness) {
-        lfsr32_next(&piece->lfsr);
-        // TODO: affect delta_direction and delta_orthogonal.
-        // delta_direction should be between -max(snake.info.size - 3, 0) and 0,
-        // and should get more negative when delta_orthogonal is larger.
-        // delta_orthogonal should be in +-(snake.info.size - 1)
-        //int max_delta = snake.info.size - 1;
-        uint32_t random_walk = piece->lfsr;
+    if (piece->dizzy) {
+        snake_add_random_walk(piece, &delta_direction, &delta_orthogonal);
     }
     switch (piece->direction) {
         case kSnakeDirectionRight:
@@ -408,6 +421,23 @@ static void snake_advance_piece_no_draw(snake_piece *piece) {
     playdate->system->logToConsole("* advanced snk piece to %d, %d", piece->x, piece->y);
 }
 
+static void snake_add_random_walk(snake_piece *piece, int *delta_direction, int *delta_orthogonal) {
+    lfsr32_next(&piece->lfsr);
+    // delta_direction should be between -max(snake.info.size - 3, 0) and 0,
+    // and should get more negative when delta_orthogonal is larger.
+    // delta_orthogonal should be in +-(snake.info.size - 1)
+    // we won't go all the way up to these limits when size is large, however,
+    // just to keep this loop down to <10 cycles.
+    int max_abs_delta = snake.info.size / 5 + 1;
+    uint32_t random_walk = piece->lfsr / 7;
+    for (int walk = 0; walk < max_abs_delta; ++walk) {
+        *delta_orthogonal += (random_walk % 3) - 1; // between -1 and +1
+        random_walk /= 3;
+    }
+    int absolute_delta = *delta_orthogonal < 0 ? -*delta_orthogonal : *delta_orthogonal;
+    *delta_direction = -absolute_delta / 3;
+}
+
 static void snake_clear(int left_x, int top_y) {
     playdate->system->logToConsole("clear snk piece %d, %d", left_x, top_y);
     display_box_draw(0, (display_box){
@@ -432,6 +462,10 @@ static void snake_draw(const snake_piece *piece) {
     snake_draw_no_trail(piece);
     int half_size = snake.info.size / 2;
     if (snake.info.size % 2) {
+        if (!piece->dizzy) {
+            // center pixel, if present, indicates dizziness for odd sizes:
+            display_pixel_clear(piece->x + half_size, piece->y + half_size);
+        }
         switch (piece->direction) {
             case kSnakeDirectionRight:
                 display_pixel_clear(piece->x + half_size + 1, piece->y + half_size);
@@ -450,15 +484,27 @@ static void snake_draw(const snake_piece *piece) {
         switch (piece->direction) {
             case kSnakeDirectionRight:
                 display_pixel_clear(piece->x + half_size, piece->y + half_size - 1);
+                if (!piece->dizzy) {
+                    display_pixel_clear(piece->x + half_size, piece->y + half_size);
+                }
                 break;
             case kSnakeDirectionUp:
+                if (!piece->dizzy) {
+                    display_pixel_clear(piece->x + half_size, piece->y + half_size - 1);
+                }
                 display_pixel_clear(piece->x + half_size - 1, piece->y + half_size - 1);
                 break;
             case kSnakeDirectionLeft:
+                if (!piece->dizzy) {
+                    display_pixel_clear(piece->x + half_size - 1, piece->y + half_size - 1);
+                }
                 display_pixel_clear(piece->x + half_size - 1, piece->y + half_size);
                 break;
             case kSnakeDirectionDown:
                 display_pixel_clear(piece->x + half_size, piece->y + half_size);
+                if (!piece->dizzy) {
+                    display_pixel_clear(piece->x + half_size - 1, piece->y + half_size);
+                }
                 break;
         }
     }
@@ -519,11 +565,13 @@ static void snake_draw_tail(const snake_piece *piece) {
     }
 }
 
-static void snake_read_direction_from_trail(snake_piece *piece) {
+static void snake_read_direction_and_dizziness_from_trail(snake_piece *piece) {
     // could optimize for current heading (piece->direction),
     // i.e., since you can't go backwards, but that makes the code a bit messy.
     int half_size = snake.info.size / 2;
     if (snake.info.size % 2) {
+        // center pixel, if present, indicates dizziness for odd sizes:
+        piece->dizzy = display_pixel_collision(piece->x + half_size, piece->y + half_size);
         if (!display_pixel_collision(piece->x + half_size + 1, piece->y + half_size)) {
             piece->direction = kSnakeDirectionRight;
         } else if (!display_pixel_collision(piece->x + half_size, piece->y + half_size - 1)) { 
@@ -537,17 +585,67 @@ static void snake_read_direction_from_trail(snake_piece *piece) {
             snake.state.game_over = GAME_OVER;
         }
     } else {
-        if (!display_pixel_collision(piece->x + half_size, piece->y + half_size - 1)) {
-            piece->direction = kSnakeDirectionRight;
-        } else if (!display_pixel_collision(piece->x + half_size - 1, piece->y + half_size - 1)) { 
-            piece->direction = kSnakeDirectionUp;
-        } else if (!display_pixel_collision(piece->x + half_size - 1, piece->y + half_size)) {
-            piece->direction = kSnakeDirectionLeft;
-        } else if (!display_pixel_collision(piece->x + half_size, piece->y + half_size)) { 
-            piece->direction = kSnakeDirectionDown;
-        } else {
-            playdate->system->logToConsole("couldn't read trail @ %d, %d", piece->x, piece->y);
-            snake.state.game_over = GAME_OVER;
+        int missing_pieces = (
+            // top left == 1
+                (!display_pixel_collision(
+                    piece->x + half_size - 1,
+                    piece->y + half_size - 1
+                ) << 0)
+            // top right == 2
+            |   (!display_pixel_collision(
+                    piece->x + half_size,
+                    piece->y + half_size - 1
+                ) << 1)
+            // bottom left == 4
+            |   (!display_pixel_collision(
+                    piece->x + half_size - 1,
+                    piece->y + half_size
+                ) << 2)
+            // bottom right == 8
+            |   (!display_pixel_collision(
+                    piece->x + half_size,
+                    piece->y + half_size
+                ) << 3)
+        );
+        switch (missing_pieces) {
+            case 1: // top-left missing only
+                piece->direction = kSnakeDirectionUp;
+                piece->dizzy = 1;
+                break;
+            case 2: // top-right missing only
+                piece->direction = kSnakeDirectionRight;
+                piece->dizzy = 1;
+                break;
+            case 4: // bottom-left missing only
+                piece->direction = kSnakeDirectionLeft;
+                piece->dizzy = 1;
+                break;
+            case 8: // bottom-right missing only
+                piece->direction = kSnakeDirectionDown;
+                piece->dizzy = 1;
+                break;
+            case 3: // top missing: 2 + 1
+                piece->direction = kSnakeDirectionUp;
+                piece->dizzy = 0;
+                break;
+            case 5: // left missing: 4 + 1
+                piece->direction = kSnakeDirectionLeft;
+                piece->dizzy = 0;
+                break;
+            case 10: // right missing: 8 + 2
+                piece->direction = kSnakeDirectionRight;
+                piece->dizzy = 0;
+                break;
+            case 12: // bottom missing: 4 + 8
+                piece->direction = kSnakeDirectionDown;
+                piece->dizzy = 0;
+                break;
+            default:
+                playdate->system->logToConsole(
+                    "weird missing pieces %d @ %d, %d",
+                    missing_pieces, piece->x, piece->y
+                );
+                snake.state.game_over = GAME_OVER;
         }
     }
 }
