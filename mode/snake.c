@@ -48,7 +48,7 @@ static void snake_advance();
 static void snake_advance_head();
 static void snake_advance_tail();
 static void snake_advance_piece_no_draw(snake_piece *piece);
-static void snake_add_random_walk(snake_piece *piece, int *delta_direction, int *delta_orthogonal);
+static int snake_random_walk(snake_piece *piece);
 static void snake_clear(int left_x, int top_y);
 static void snake_draw_no_trail(const snake_piece *piece);
 static void snake_draw(const snake_piece *piece);
@@ -329,11 +329,18 @@ static void snake_game_loop() {
 
 void snake_advance() {
     playdate->system->logToConsole("advancing snake from (%d, %d)", snake.state.head.x, snake.state.head.y);
-    snake.state.head.direction = snake.state.desired_direction;
+    
+    int head_dizziness = snake.state.head.dizzy;
+    if (snake.state.desired_direction != snake.state.head.direction) {
+        snake.state.head.direction = snake.state.desired_direction;
+        // don't be dizzy when turning, or you might hit yourself:
+        snake.state.head.dizzy = 0;
+    }
     // let the tail move first so that the head can do a narrow miss.
     // we might need to draw it back later, though, if the snake grew by eating an apple.
     snake_clear(snake.state.tail.x, snake.state.tail.y);
     snake_advance_head();
+    snake.state.head.dizzy = head_dizziness;
     if (snake.state.size_delta == 0) {
         snake_advance_tail();
         if (snake.state.game_over) {
@@ -389,27 +396,23 @@ static void snake_advance_tail() {
 static void snake_advance_piece_no_draw(snake_piece *piece) {
     // does not actually draw, in case we're the tail (where we don't want to overwrite the trail)
     // or the head (where we want to check collisions first).
-    int delta_direction = 0;
-    int delta_orthogonal = 0;
-    if (piece->dizzy) {
-        snake_add_random_walk(piece, &delta_direction, &delta_orthogonal);
-    }
+    int delta_orthogonal = snake_random_walk(piece);
     switch (piece->direction) {
         case kSnakeDirectionRight:
-            piece->x += snake.info.size + delta_direction;
+            piece->x += snake.info.size;
             piece->y += delta_orthogonal;
             break;
         case kSnakeDirectionUp:
             piece->x -= delta_orthogonal;
-            piece->y -= snake.info.size + delta_direction;
+            piece->y -= snake.info.size;
             break;
         case kSnakeDirectionLeft:
-            piece->x -= snake.info.size + delta_direction;
+            piece->x -= snake.info.size;
             piece->y -= delta_orthogonal;
             break;
         case kSnakeDirectionDown:
             piece->x += delta_orthogonal;
-            piece->y += snake.info.size + delta_direction;
+            piece->y += snake.info.size;
             break;
         default:
             snake.state.game_over = GAME_OVER;
@@ -421,21 +424,22 @@ static void snake_advance_piece_no_draw(snake_piece *piece) {
     playdate->system->logToConsole("* advanced snk piece to %d, %d", piece->x, piece->y);
 }
 
-static void snake_add_random_walk(snake_piece *piece, int *delta_direction, int *delta_orthogonal) {
+static int snake_random_walk(snake_piece *piece) {
+    if (piece->dizzy == 0) {
+        return 0;
+    }
     lfsr32_next(&piece->lfsr);
-    // delta_direction should be between -max(snake.info.size - 3, 0) and 0,
-    // and should get more negative when delta_orthogonal is larger.
     // delta_orthogonal should be in +-(snake.info.size - 1)
     // we won't go all the way up to these limits when size is large, however,
     // just to keep this loop down to <10 cycles.
-    int max_abs_delta = snake.info.size / 5 + 1;
+    int max_abs_delta = snake.info.size / 10 + 1;
     uint32_t random_walk = piece->lfsr / 7;
+    int delta_orthogonal = 0;
     for (int walk = 0; walk < max_abs_delta; ++walk) {
-        *delta_orthogonal += (random_walk % 3) - 1; // between -1 and +1
+        delta_orthogonal += (random_walk % 3) - 1; // between -1 and +1
         random_walk /= 3;
     }
-    int absolute_delta = *delta_orthogonal < 0 ? -*delta_orthogonal : *delta_orthogonal;
-    *delta_direction = -absolute_delta / 3;
+    return delta_orthogonal;
 }
 
 static void snake_clear(int left_x, int top_y) {
