@@ -221,15 +221,15 @@ void snake_reset() {
     }
     // require being at least 2 units long:
     next_snake.starting_length = next_snake.starting_length > 2 ? next_snake.starting_length : 2;
+    uint32_t time = playdate->system->getCurrentTimeMilliseconds();
     snake.state = (snake_state){
         .counter = 0,
         .current_length = next_snake.starting_length,
         .desired_direction = kSnakeDirectionRight,
         .head = (snake_piece){
-            .x = 4 * snake.info.size,
-            .y = 4 * snake.info.size,
-            // TODO: set from getMilliseconds
-            .lfsr = 1,
+            .x = 2 * snake.info.size,
+            .y = 3 * snake.info.size,
+            .lfsr = time ? time : 1,
             .direction = kSnakeDirectionRight,
             .dizzy = next_snake.dizziness,
         },
@@ -351,6 +351,7 @@ void snake_advance() {
         // draw tail back since we cleared it for narrow misses (see comment above).
         snake_draw_tail(&snake.state.tail);
         --snake.state.size_delta;
+        ++snake.state.current_length;
     } else {
         // TODO: support this, maybe, but require having at least length == 2
         playdate->system->logToConsole("invalid snake size delta: %d", snake.state.size_delta);
