@@ -33,6 +33,56 @@ void display_invert() {
     playdate->graphics->markUpdatedRows(0, LCD_ROWS - 1);
 }
 
+// sets a pixel to black (filled) regardless of inversion
+static void display_pixel_draw_black(int x, int y) {
+    if (x < 0 || x >= LCD_COLUMNS || y < 0 || y >= LCD_ROWS) {
+        return;
+    }
+    uint8_t *row_buffer = display() + ROW_STRIDE * y;
+    int byte = x / 8;
+    int bit = 7 - (x % 8); // most-significant-bits are left-most.
+    row_buffer[byte] &= ~(1 << bit);
+    playdate->graphics->markUpdatedRows(y, y);
+}
+
+// sets a pixel to white (cleared) regardless of inversion
+static void display_pixel_draw_white(int x, int y) {
+    if (x < 0 || x >= LCD_COLUMNS || y < 0 || y >= LCD_ROWS) {
+        return;
+    }
+    uint8_t *row_buffer = display() + ROW_STRIDE * y;
+    int byte = x / 8;
+    int bit = 7 - (x % 8); // most-significant-bits are left-most.
+    row_buffer[byte] |= 1 << bit;
+    playdate->graphics->markUpdatedRows(y, y);
+}
+
+void display_pixel_draw(int x, int y) {
+    if (display_inversion) {
+        display_pixel_draw_black(x, y);
+    } else {
+        display_pixel_draw_white(x, y);
+    }
+}
+
+void display_pixel_clear(int x, int y) {
+    if (display_inversion) {
+        display_pixel_draw_white(x, y);
+    } else {
+        display_pixel_draw_black(x, y);
+    }
+}
+
+int display_pixel_collision(int x, int y) {
+    if (x < 0 || x >= LCD_COLUMNS || y < 0 || y >= LCD_ROWS) {
+        return 1;
+    }
+    const uint8_t *row_buffer = display() + ROW_STRIDE * y;
+    int byte = x / 8;
+    int bit = 7 - (x % 8); // most-significant-bits are left-most.
+    return ((row_buffer[byte] ^ display_inversion) >> bit) & 1;
+}
+
 static inline void display_byte_draw_with_mask(
     uint8_t *buffer_at_byte,
     uint8_t mask,
@@ -249,55 +299,6 @@ int display_box_box_collision(display_box box1, display_box box2) {
         &&  box1.start_y < box2.end_y
         &&  box2.start_y < box1.end_y
     );
-}
-
-static void display_pixel_draw_black(int x, int y) {
-    if (x < 0 || x >= LCD_COLUMNS || y < 0 || y >= LCD_ROWS) {
-        return;
-    }
-    uint8_t *row_buffer = display() + ROW_STRIDE * y;
-    int byte = x / 8;
-    int bit = 7 - (x % 8); // most-significant-bits are left-most.
-    row_buffer[byte] &= ~(1 << bit);
-    playdate->graphics->markUpdatedRows(y, y);
-}
-
-static void display_pixel_draw_white(int x, int y) {
-    playdate->system->logToConsole("* clear pxl %d, %d", x, y);
-    if (x < 0 || x >= LCD_COLUMNS || y < 0 || y >= LCD_ROWS) {
-        return;
-    }
-    uint8_t *row_buffer = display() + ROW_STRIDE * y;
-    int byte = x / 8;
-    int bit = 7 - (x % 8); // most-significant-bits are left-most.
-    row_buffer[byte] |= 1 << bit;
-    playdate->graphics->markUpdatedRows(y, y);
-}
-
-void display_pixel_draw(int x, int y) {
-    if (display_inversion) {
-        display_pixel_draw_black(x, y);
-    } else {
-        display_pixel_draw_white(x, y);
-    }
-}
-
-void display_pixel_clear(int x, int y) {
-    if (display_inversion) {
-        display_pixel_draw_white(x, y);
-    } else {
-        display_pixel_draw_black(x, y);
-    }
-}
-
-int display_pixel_collision(int x, int y) {
-    if (x < 0 || x >= LCD_COLUMNS || y < 0 || y >= LCD_ROWS) {
-        return 1;
-    }
-    const uint8_t *row_buffer = display() + ROW_STRIDE * y;
-    int byte = x / 8;
-    int bit = 7 - (x % 8); // most-significant-bits are left-most.
-    return ((row_buffer[byte] ^ display_inversion) >> bit) & 1;
 }
 
 #ifndef NDEBUG
