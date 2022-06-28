@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 typedef struct display_slice {
+    // TODO: allow int16_t, check bounds when drawing, e.g., NORMALIZE_SLICE
     // start drawing here:
     uint8_t start_row;
     // draw up until, but not including, this:
@@ -23,13 +24,13 @@ typedef struct display_box {
     display_box;
 
 void display_invert();
-void display_clear(uint8_t bg_color, display_slice slice);
-void display_clear_alternating(uint8_t bg_color0, uint8_t bg_color1, display_slice slice);
+void display_slice_fill(uint8_t bg_color, display_slice slice);
+void display_slice_fill_alternating(uint8_t bg_color0, uint8_t bg_color1, display_slice slice);
+// TODO: void display_slice_fill_multicolor(int color_count, uint8_t *row_colors, display_slice slice);
 
 void display_box_draw(uint8_t color, display_box box);
 void display_box_draw_alternating(uint8_t color0, uint8_t color1, display_box box);
 void display_box_draw_multicolor(int color_count, uint8_t *row_colors, display_box box);
-// TODO: display_box_draw_alternating
 // will return "1" if your box collides with currently drawn pixels (based on inversion).
 // going off-screen will also count as a collision, since we pretend that there is a wall there.
 int display_box_collision(display_box box);

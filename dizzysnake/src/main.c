@@ -22,5 +22,5 @@ void initialize() {
 }
 
 void default_update(display_slice slice) {
-    display_clear(17, slice);
+    display_slice_fill(17, slice);
 }

@@ -75,13 +75,13 @@ static void update_transition_modes(unsigned int transition_counter, int top_mod
             .end_row = transition_counter - 2,
         });
         // draw a line between the modes:
-        display_clear(255, (display_slice){
+        display_slice_fill(255, (display_slice){
             .start_row = transition_counter - 2,
             .end_row = transition_counter,
         });
     } else {
         // transition_counter should still be >= 0.
-        display_clear(255, (display_slice){
+        display_slice_fill(255, (display_slice){
             .start_row = 0,
             .end_row = transition_counter,
         });
@@ -96,7 +96,7 @@ static void update_mode(int mode, display_slice slice) {
     switch (mode) {
         // TODO: make this a "wipe" mode, which switches back to a "runtime.return_mode"
         case kRuntimeModeWipe:
-            display_clear(85, slice);
+            display_slice_fill(85, slice);
             return;
         #ifdef MODE_SNAKE
         case kRuntimeModeSnake:

@@ -48,7 +48,7 @@ static inline uint8_t display_byte_collision_with_mask(
     return (byte ^ display_inversion) & mask;
 }
 
-void display_clear(uint8_t bg_color, display_slice slice) {
+void display_slice_fill(uint8_t bg_color, display_slice slice) {
     if (slice.start_row >= slice.end_row || slice.start_row >= LCD_ROWS) {
         return;
     }
@@ -62,7 +62,7 @@ void display_clear(uint8_t bg_color, display_slice slice) {
     playdate->graphics->markUpdatedRows(slice.start_row, slice.end_row - 1);
 }
 
-void display_clear_alternating(uint8_t bg_color0, uint8_t bg_color1, display_slice slice) {
+void display_slice_fill_alternating(uint8_t bg_color0, uint8_t bg_color1, display_slice slice) {
     if (slice.start_row >= slice.end_row || slice.start_row >= LCD_ROWS) {
         return;
     }
@@ -305,7 +305,7 @@ void test__core__display() {
     TEST(
         uint8_t clear_color = 123;
         uint8_t display_color = ~clear_color; // inverted
-        display_clear(clear_color, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
+        display_slice_fill(clear_color, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
         const uint8_t *display_buffer = display();
         for (int y = 0; y < LCD_ROWS; ++y)
         for (int byte = 0; byte < LCD_COLUMNS / 8; ++byte) {
@@ -321,7 +321,7 @@ void test__core__display() {
     );
 
     TEST(
-        display_clear(0, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
+        display_slice_fill(0, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
         display_box_draw(255, (display_box){.start_x = 8, .end_x = 16, .start_y = 35, .end_y = 40});
         const uint8_t *display_buffer = display();
         for (int y = 0; y < LCD_ROWS; ++y)
@@ -339,7 +339,7 @@ void test__core__display() {
 
     TEST(
         for (int offset = 0; offset < 10; offset += 1) {
-            display_clear(0, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
+            display_slice_fill(0, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
             display_box_draw(255, (display_box){
                 .start_x = 8 + offset,
                 .end_x = 18 + offset,
@@ -368,7 +368,7 @@ void test__core__display() {
         for (int clear_color_int = 0; clear_color_int <= 255; clear_color_int += 85) {
             uint8_t bg_color = clear_color_int;
             uint8_t fg_color = ~bg_color; 
-            display_clear(bg_color, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
+            display_slice_fill(bg_color, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
             for (int start_x = -1; start_x < LCD_COLUMNS; start_x += 131)
             for (int end_x = start_x + 1; end_x <= start_x + 55; end_x += 27)
             for (int start_y = -1; start_y < LCD_ROWS; start_y += 130)

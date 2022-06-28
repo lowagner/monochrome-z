@@ -243,7 +243,7 @@ void snake_reset(display_slice slice) {
     memcpy(&snake.state.tail, &snake.state.head, sizeof(snake_piece));
     snake_advance_piece_no_draw(&snake.state.head);
 
-    display_clear(0, slice);
+    display_slice_fill(0, slice);
     snake_draw_no_trail(&snake.state.head);
     snake_draw_tail(&snake.state.tail);
 
@@ -263,7 +263,7 @@ void snake_update(display_slice slice) {
         // we rely on the display pixels to contain the game state, so
         // unless we have the full display to work with, don't do anything else:
         snake_needs_reset = 1;
-        display_clear_alternating(85, 170, slice);
+        display_slice_fill_alternating(85, 170, slice);
     } else if (snake_needs_init) {
         snake_initialize();
     } else if (snake_needs_reset) {
@@ -705,7 +705,7 @@ static int snake_add_apple() {
 void test__mode__snake() {
     snake_piece test_piece;
     TEST(
-        display_clear(0, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
+        display_slice_fill(0, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
         snake.info.size = 9;
         test_piece.x = 12;
         test_piece.y = 13;
