@@ -289,11 +289,6 @@ static void snake_game_loop() {
         snake.state.head.dizzy = next_snake.dizziness;
     }
     if (snake.state.game_over) {
-        // TODO: figure out why this isn't working on the console anymore.
-        // it seems like all display writes (e.g., even above with kButtonA) are not working
-        // when game_over != 0, even though it is clearly running this logic to count down.
-        // the updates do seem to get queued/run, however, so everything is working behind
-        // the scenes, but the display is not updating for some reason.
         if (snake.state.game_over == GAME_OVER) {
             display_invert();
         }

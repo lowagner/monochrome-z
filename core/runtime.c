@@ -62,6 +62,7 @@ static int update(void *unused) {
             .end_row = LCD_ROWS,
         });
     }
+    return 1;
 }
 
 static void update_transition_modes(unsigned int transition_counter, int top_mode, int bottom_mode) {
