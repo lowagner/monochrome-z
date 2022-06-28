@@ -211,7 +211,7 @@ static void snake_initialize() {
     snake_needs_init = 0;
 }
 
-void snake_reset() {
+void snake_reset(display_slice slice) {
     playdate->system->logToConsole("snake reset");
     snake.info = next_snake;
     if (snake.info.size < 2) {
@@ -243,6 +243,10 @@ void snake_reset() {
     memcpy(&snake.state.tail, &snake.state.head, sizeof(snake_piece));
     snake_advance_piece_no_draw(&snake.state.head);
 
+    display_clear(0, slice);
+    snake_draw_no_trail(&snake.state.head);
+    snake_draw_tail(&snake.state.tail);
+
     snake_needs_reset = 0;
 }
 
@@ -263,11 +267,7 @@ void snake_update(display_slice slice) {
     } else if (snake_needs_init) {
         snake_initialize();
     } else if (snake_needs_reset) {
-        snake_reset();
-
-        display_clear(0, slice);
-        snake_draw_no_trail(&snake.state.head);
-        snake_draw_tail(&snake.state.tail);
+        snake_reset(slice);
     } else {
         snake_game_loop();
     }
@@ -289,6 +289,11 @@ static void snake_game_loop() {
         snake.state.head.dizzy = next_snake.dizziness;
     }
     if (snake.state.game_over) {
+        // TODO: figure out why this isn't working on the console anymore.
+        // it seems like all display writes (e.g., even above with kButtonA) are not working
+        // when game_over != 0, even though it is clearly running this logic to count down.
+        // the updates do seem to get queued/run, however, so everything is working behind
+        // the scenes, but the display is not updating for some reason.
         if (snake.state.game_over == GAME_OVER) {
             display_invert();
         }
