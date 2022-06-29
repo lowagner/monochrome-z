@@ -5,33 +5,40 @@
 %: export PD_PROJECT_MODES=snake
 %: export PD_PROJECT_NAME=$(shell basename $(shell pwd))
 
-run: Source
+run: Source backup-pdxinfo
 	@echo "===================================="
 	@echo "Building project $${PD_PROJECT_NAME}"
 	@echo "===================================="
-	#mkdir -p build && cd build && cmake .. && make && ${PLAYDATE_SDK_PATH}/bin/PlaydateSimulator $$project.so
 	make -f ../PlaydateMakefile pdc && $${PLAYDATE_SDK_PATH}/bin/PlaydateSimulator $${PD_PROJECT_NAME}.pdx
+	mv backup-pdxinfo $${PD_PROJECT_NAME}.pdx/pdxinfo
 
-device: Source
+device: Source backup-pdxinfo
 	@echo "===================================="
 	@echo "Building pdx for $${PD_PROJECT_NAME}"
 	@echo "===================================="
 	# NOTE: required adding --specs=nosys.specs after $(CC) to buildsupport/common.mk pdex.elf rule
 	make -f ../PlaydateMakefile
+	mv backup-pdxinfo $${PD_PROJECT_NAME}.pdx/pdxinfo
 	zip -r new.zip $${PD_PROJECT_NAME}.pdx
 	mv new.zip $${PD_PROJECT_NAME}.zip
 
-debug: Source
+debug: Source backup-pdxinfo
 	@echo "=========================================="
 	@echo "Building debug project $${PD_PROJECT_NAME}"
 	@echo "=========================================="
-	#mkdir -p buildDebug && cd buildDebug && cmake -DCMAKE_BUILD_TYPE=Debug .. && make && ${PLAYDATE_SDK_PATH}/bin/PlaydateSimulator $$project.so
 	make -f ../PlaydateMakefile debug && $${PLAYDATE_SDK_PATH}/bin/PlaydateSimulator $${PD_PROJECT_NAME}.pdx
 
-clean:
+clean: backup-pdxinfo
 	rm -rf build buildDebug
-	# make -f ../PlaydateMakefile clean
+	make -f ../PlaydateMakefile clean
+	mkdir -p $${PD_PROJECT_NAME}.pdx
+	mv backup-pdxinfo $${PD_PROJECT_NAME}.pdx/pdxinfo
 	rm -rf core mode
 
 Source:
 	mkdir -p Source
+
+backup-pdxinfo:
+	mkdir -p $${PD_PROJECT_NAME}.pdx
+	touch $${PD_PROJECT_NAME}.pdx/pdxinfo
+	cp $${PD_PROJECT_NAME}.pdx/pdxinfo backup-pdxinfo
