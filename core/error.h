@@ -42,6 +42,8 @@
     } \
     --error_test_only; \
 })
+// TODO: move TEST_LOGGED to TEST, and similarly everywhere, e.g., for EXPECT_EQUAL.
+// i don't find TEST very helpful, since it doesn't log to our nested error output
 #define TEST(x, contextFormat, ...) \
     _TEST(playdate->system->error, x, contextFormat, __VA_ARGS__)
 #define TEST_LOGGED(x, contextFormat, ...) \

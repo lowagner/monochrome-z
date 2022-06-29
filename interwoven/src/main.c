@@ -14,6 +14,7 @@ DATA4(
 void initialize() {
     // TODO: better way of adding these tests programatically
     #ifndef NDEBUG
+    test__core__data();
     test__core__display();
     test__core__error();
     test__mode__snake();
