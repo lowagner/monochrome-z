@@ -48,13 +48,13 @@ int display_box_box_collision(display_box box1, display_box box2);
 // it doesn't have any transparency options, since it is the background.
 typedef struct display_tile {
     // data should be 32 bytes long and laid out as follows:
-    // * row 0:     data[0], data[1]
-    // * row 1:     data[2], data[3]
+    // * row 0:     data1[0], data1[1]
+    // * row 1:     data1[2], data1[3]
     //   ...
-    // * row 15:    data[30], data[31]
-    // each byte of data corresponds to 8 pixels onscreen, 1 bit per pixel.
+    // * row 15:    data1[30], data1[31]
+    // each byte of data1 corresponds to 8 pixels onscreen, 1 bit per pixel.
     // 0 = clear the pixel, 1 = fill the pixel.
-    const uint8_t *data;
+    const uint8_t *data1;
 
     uint8_t x_over_8;   // the left side of the tile, divided by 8.
                         // (real tile x coordinates will normally be at multiples of 16,
@@ -63,22 +63,28 @@ typedef struct display_tile {
 }
     display_tile;
 
+// draws the tile to the display.  note that the tile should be completely on-screen,
+// otherwise there will be some undefined behavior.
+// i.e., x_over_8 should be between 0 and 48 (x_max = 400 - 16), inclusive,
+//   and y should be between 0 and 224 = 240 - 16, inclusive.
+void display_tile_draw(display_tile tile);
+
 // a sprite of variable size, with transparency options.
 // meant to fit into 96 bits = 12 bytes (on 32 bit architecture).
 typedef struct display_sprite {
     // data should be laid out as follows:
-    // * row 0:   data[0] ... data[width / 4 - 1]
-    // * row 1:   data[width / 4] ... data[2 * width / 4 - 1]
+    // * row 0:   data2[0] ... data2[width / 4 - 1]
+    // * row 1:   data2[width / 4] ... data2[2 * width / 4 - 1]
     // etc.
-    // each byte of data corresponds to 4 pixels onscreen, with 2 bits per pixel.
+    // each byte of data2 corresponds to 4 pixels onscreen, with 2 bits per pixel.
     // 0 = clear the pixel, 1 = fill the pixel, 2 = skip this pixel, 3 = invert the pixel.
-    // if e.g., one_byte = data[some_location];
+    // if e.g., one_byte = data2[some_location];
     // then, sticking with least significant bits are to the "right":
     // * ((one_byte >> 6) & 2) is the first pixel (from the left)
     // * ((one_byte >> 4) & 2) is the second pixel
     // * ((one_byte >> 2) & 2) is the third pixel
     // * ((one_byte >> 0) & 2) is the fourth, right-most pixel
-    const uint8_t *data;
+    const uint8_t *data2;
 
     int16_t x;
     int16_t y;
@@ -88,3 +94,7 @@ typedef struct display_sprite {
     uint8_t height; // actual height in pixels (rows)
 }
     display_sprite;
+
+// draws the sprite to the display. there will be checks in case the sprite is off-screen,
+// so no need to be as careful as with display_tile_draw here for drawing sprites.
+void display_sprite_draw(display_sprite sprite);

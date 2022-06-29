@@ -301,8 +301,27 @@ int display_box_box_collision(display_box box1, display_box box2) {
     );
 }
 
+void display_tile_draw(display_tile tile) {
+    uint8_t *display_buffer = display();
+    ASSERT(tile.x_over_8 <= (400 - 16) / 8);
+    ASSERT(tile.y <= 240 - 16);
+    const int max_row = 16 + tile.y;
+    const uint8_t *tile_data = tile.data1;
+
+    for (int row = tile.y; row < max_row; ++row) {
+        // unrolling the inner loop over x, since it's just two bytes:
+        display_buffer[row * ROW_STRIDE + tile.x_over_8 + 0] = (*tile_data++) ^ display_inversion;
+        display_buffer[row * ROW_STRIDE + tile.x_over_8 + 1] = (*tile_data++) ^ display_inversion;
+    }
+}
+
+void display_sprite_draw(display_sprite sprite) {
+    // TODO:
+}
+
 #ifndef NDEBUG
 void test__core__display() {
+    uint8_t test_tile_data[16 * 2] = {0};
     TEST(
         uint8_t clear_color = 123;
         uint8_t display_color = ~clear_color; // inverted
@@ -403,6 +422,36 @@ void test__core__display() {
             }
         },
         "%s: can erase a drawn box with a clear box", AT
+    );
+
+    TEST(
+        const uint8_t *display_buffer = display();
+        display_slice_fill(0, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
+        for (int i = 0; i < 32; ++i) {
+            test_tile_data[i] = 8 * (i - 3);
+        }
+        display_tile_draw((display_tile){
+            .data1 = test_tile_data,
+            .x_over_8 = 5,
+            .y = 7,
+        });
+        const uint8_t *data = test_tile_data;
+        for (int y = 7 - 1; y < 7 + 16 + 1; ++y)
+        for (int byte = 5 - 1; byte < 5 + 2 + 1; ++byte) {
+            TEST(
+                EXPECT_INT_EQUAL(
+                    display_buffer[y * ROW_STRIDE + byte],
+                    (uint8_t)~(
+                            (y >= 7 && y < 7+16 && byte >= 5 && byte < 7)
+                        ?   *data++ // tile data here
+                        :   0       // bg color here
+                    )
+                ),
+                "at display(y = %d, byte = %d)",
+                y, byte
+            );
+        },
+        "%s: can draw a tile", AT
     );
 }
 #endif
