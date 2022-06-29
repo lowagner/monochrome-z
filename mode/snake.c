@@ -455,6 +455,10 @@ static void snake_clear(int left_x, int top_y) {
 
 static void snake_draw_no_trail(const snake_piece *piece) {
     playdate->system->logToConsole("drw snk piece %d, %d", piece->x, piece->y);
+    // TODO: for large enough snake size, don't draw the left/right sides of the
+    // snake, so that it's easier to see the snake's lines when going along-side itself.
+    // make sure that corners work out ok, though.  maybe have an "incoming_direction"
+    // on the snake_piece.
     display_box_draw(255, (display_box){
         .start_x = piece->x,
         .start_y = piece->y,
