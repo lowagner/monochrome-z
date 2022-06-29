@@ -2,6 +2,7 @@
 
 #define ROW_STRIDE 52
 
+#include "data.h"
 #include "playdate.h"
 
 #ifndef NDEBUG
@@ -22,6 +23,9 @@ static inline uint8_t *display() {
 
 // use 0 for inverted (black bg with white fg), 255 for not inverted (white bg with black fg).
 static uint8_t display_inversion = 255;
+// TODO: double check these, i'm not 100% sure that i got this right...
+#define PIXEL_ON (!display_inversion)
+#define PIXEL_OFF (!!display_inversion)
 
 void display_invert() {
     uint8_t *display_buffer = display();
@@ -58,6 +62,7 @@ static void display_pixel_draw_white(int x, int y) {
 }
 
 void display_pixel_draw(int x, int y) {
+    // TODO: use data_booleans_set(!display_inversion) for this
     if (display_inversion) {
         display_pixel_draw_black(x, y);
     } else {
@@ -66,6 +71,7 @@ void display_pixel_draw(int x, int y) {
 }
 
 void display_pixel_clear(int x, int y) {
+    // TODO: use data_booleans_set(display_inversion) for this
     if (display_inversion) {
         display_pixel_draw_white(x, y);
     } else {
@@ -77,6 +83,7 @@ int display_pixel_collision(int x, int y) {
     if (x < 0 || x >= LCD_COLUMNS || y < 0 || y >= LCD_ROWS) {
         return 1;
     }
+    // TODO: use data_booleans for this
     const uint8_t *row_buffer = display() + ROW_STRIDE * y;
     int byte = x / 8;
     int bit = 7 - (x % 8); // most-significant-bits are left-most.
@@ -307,7 +314,6 @@ void display_tile_draw(display_tile tile) {
     ASSERT(tile.y <= 240 - 16);
     const int max_row = 16 + tile.y;
     const uint8_t *tile_data = tile.data1;
-
     for (int row = tile.y; row < max_row; ++row) {
         // unrolling the inner loop over x, since it's just two bytes:
         display_buffer[row * ROW_STRIDE + tile.x_over_8 + 0] = (*tile_data++) ^ display_inversion;
@@ -316,7 +322,54 @@ void display_tile_draw(display_tile tile) {
 }
 
 void display_sprite_draw(display_sprite sprite) {
-    // TODO:
+    uint8_t *const display_buffer = display();
+    if (sprite.x >= LCD_COLUMNS || sprite.y >= LCD_ROWS) {
+        return;
+    }
+    int16_t start_pixel_x = sprite.x > 0 ? sprite.x : 0;
+    int16_t end_pixel_x = sprite.x + sprite.width;
+    if (end_pixel_x < 0) {
+        return;
+    } else if (end_pixel_x >= LCD_COLUMNS) {
+        end_pixel_x = LCD_COLUMNS;
+    }
+    int16_t start_pixel_y = sprite.y > 0 ? sprite.y : 0;
+    int16_t end_pixel_y = sprite.y + sprite.height;
+    if (end_pixel_y < 0) {
+        return;
+    } else if (end_pixel_y >= LCD_ROWS) {
+        end_pixel_y = LCD_ROWS;
+    }
+    data_booleans display_iterator;
+    data_u2s sprite_iterator;
+    for (int16_t pixel_y = start_pixel_y; pixel_y < end_pixel_y; ++pixel_y) {
+        data_booleans_initialize(&display_iterator, pixel_y * ROW_STRIDE + start_pixel_x);
+        data_u2s_initialize(&sprite_iterator, 
+                (pixel_y - sprite.y) * sprite.width / 4
+            +   (start_pixel_x - sprite.x)
+        );
+        for (int16_t pixel_x = start_pixel_x; pixel_x < end_pixel_x; ++pixel_x) {
+            int u2 = data_u2s_get(&sprite_iterator, sprite.data2);
+            data_u2s_increment(&sprite_iterator);
+
+            switch (u2) {
+                case 0:
+                    data_booleans_set(&display_iterator, display_buffer, PIXEL_OFF);
+                    break;
+                case 1:
+                    data_booleans_set(&display_iterator, display_buffer, PIXEL_ON);
+                    break;
+                case 3:
+                    data_booleans_flip(&display_iterator, display_buffer);
+                    break;
+                default:
+                    // skip doing anything to display, including case 2.
+                    break;
+            }
+            data_booleans_increment(&display_iterator);
+        }
+    }
+    playdate->graphics->markUpdatedRows(start_pixel_y, end_pixel_y - 1);
 }
 
 #ifndef NDEBUG
