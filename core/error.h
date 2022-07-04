@@ -2,6 +2,8 @@
 
 #include <string.h>
 
+#define $(X) (X##_t)
+
 #define ERROR_BUFFER_SIZE 4096
 // TODO: replace with __VA_ARGS__
 #define AND ,

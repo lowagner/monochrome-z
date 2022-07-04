@@ -15,10 +15,10 @@ typedef struct snake_info {
     int dizziness;
     int inverse_speed;
 }
-    snake_info;
+    snake_info_t;
 
-extern snake_info next_snake;
+extern snake_info_t next_snake;
 
-void snake_update(display_slice slice);
+void snake_update(display_slice_t slice);
 
 #endif

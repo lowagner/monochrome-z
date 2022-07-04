@@ -4,7 +4,7 @@
 #include "playdate.h"   // for LCD_ROWS
 
 static int update(void *unused);
-static void update_mode(int mode, display_slice slice);
+static void update_mode(int mode, display_slice_t slice);
 static void update_transition_modes(unsigned int transition_counter, int top_mode, int bottom_mode);
 
 struct runtime runtime = {
@@ -57,7 +57,7 @@ static int update(void *unused) {
         }
     } else {
         no_transition_update:
-        update_mode(runtime_mode, (display_slice){
+        update_mode(runtime_mode, $(display_slice){
             .start_row = 0,
             .end_row = LCD_ROWS,
         });
@@ -70,29 +70,29 @@ static void update_transition_modes(unsigned int transition_counter, int top_mod
     // make sure to use a consistent one for both display slices, via passed-in transition_counter.
     // we also flip transition_counter based on different transition types (up vs. down).
     if (transition_counter >= 2) {
-        update_mode(top_mode, (display_slice){
+        update_mode(top_mode, $(display_slice){
             .start_row = 0,
             .end_row = transition_counter - 2,
         });
         // draw a line between the modes:
-        display_slice_fill(255, (display_slice){
+        display_slice_fill(255, $(display_slice){
             .start_row = transition_counter - 2,
             .end_row = transition_counter,
         });
     } else {
         // transition_counter should still be >= 0.
-        display_slice_fill(255, (display_slice){
+        display_slice_fill(255, $(display_slice){
             .start_row = 0,
             .end_row = transition_counter,
         });
     }
-    update_mode(bottom_mode, (display_slice){
+    update_mode(bottom_mode, $(display_slice){
         .start_row = transition_counter,
         .end_row = LCD_ROWS,
     });
 }
 
-static void update_mode(int mode, display_slice slice) {
+static void update_mode(int mode, display_slice_t slice) {
     switch (mode) {
         // TODO: make this a "wipe" mode, which switches back to a "runtime.return_mode"
         case kRuntimeModeWipe:
@@ -134,14 +134,14 @@ int eventHandler(PlaydateAPI *pd, PDSystemEvent event, uint32_t argument) {
 }
 
 void runtime_menu_callback(void *data) {
-    runtime_menu *menu = data;
+    runtime_menu_t *menu = data;
     if (menu->pd_menu == NULL) {
         return;
     }
     menu->set_value_from_index(playdate->system->getMenuItemValue(menu->pd_menu));
 }
 
-int runtime_add_menu(runtime_menu *menu) {
+int runtime_add_menu(runtime_menu_t *menu) {
     if (runtime_menu_count >= 3 || menu->option_count == 0) {
         return 0;
     }

@@ -17,11 +17,11 @@ typedef struct display_slice {
     // draw up until, but not including, this:
     uint8_t end_row;
 }
-    display_slice;
+    display_slice_t;
 
-void display_slice_fill(uint8_t bg_color, display_slice slice);
-void display_slice_fill_alternating(uint8_t bg_color0, uint8_t bg_color1, display_slice slice);
-// TODO: void display_slice_fill_multicolor(int color_count, uint8_t *row_colors, display_slice slice);
+void display_slice_fill(uint8_t bg_color, display_slice_t slice);
+void display_slice_fill_alternating(uint8_t bg_color0, uint8_t bg_color1, display_slice_t slice);
+// TODO: void display_slice_fill_multicolor(int color_count, uint8_t *row_colors, display_slice_t slice);
 
 typedef struct display_box {
     // start drawing here:
@@ -33,16 +33,16 @@ typedef struct display_box {
     // draw up until, but not including, this:
     int16_t end_y;
 }
-    display_box;
+    display_box_t;
 
-void display_box_draw(uint8_t color, display_box box);
-void display_box_draw_alternating(uint8_t color0, uint8_t color1, display_box box);
-void display_box_draw_multicolor(int color_count, uint8_t *row_colors, display_box box);
+void display_box_draw(uint8_t color, display_box_t box);
+void display_box_draw_alternating(uint8_t color0, uint8_t color1, display_box_t box);
+void display_box_draw_multicolor(int color_count, uint8_t *row_colors, display_box_t box);
 // will return "1" if your box collides with currently drawn pixels (based on inversion).
 // going off-screen will also count as a collision, since we pretend that there is a wall there.
-int display_box_collision(display_box box);
+int display_box_collision(display_box_t box);
 // checks if two display boxes collide with each other (no frame pixels are checked).
-int display_box_box_collision(display_box box1, display_box box2);
+int display_box_box_collision(display_box_t box1, display_box_t box2);
 
 // a 16x16 tile which is meant to be drawn as the background;
 // it doesn't have any transparency options, since it is the background.

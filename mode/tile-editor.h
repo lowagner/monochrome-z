@@ -19,6 +19,6 @@ typedef struct tile_editor {
 
 extern struct tile_editor tile_editor;
 
-void tile_editor_update(display_slice slice);
+void tile_editor_update(display_slice_t slice);
 
 #endif

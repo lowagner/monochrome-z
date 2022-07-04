@@ -21,6 +21,6 @@ void initialize() {
     runtime.transition.speed = 10;
 }
 
-void default_update(display_slice slice) {
+void default_update(display_slice_t slice) {
     display_slice_fill(17, slice);
 }

@@ -105,7 +105,7 @@ static inline uint8_t display_byte_collision_with_mask(
     return (byte ^ display_inversion) & mask;
 }
 
-void display_slice_fill(uint8_t bg_color, display_slice slice) {
+void display_slice_fill(uint8_t bg_color, display_slice_t slice) {
     if (slice.start_row >= slice.end_row || slice.start_row >= LCD_ROWS) {
         return;
     }
@@ -119,7 +119,7 @@ void display_slice_fill(uint8_t bg_color, display_slice slice) {
     playdate->graphics->markUpdatedRows(slice.start_row, slice.end_row - 1);
 }
 
-void display_slice_fill_alternating(uint8_t bg_color0, uint8_t bg_color1, display_slice slice) {
+void display_slice_fill_alternating(uint8_t bg_color0, uint8_t bg_color1, display_slice_t slice) {
     if (slice.start_row >= slice.end_row || slice.start_row >= LCD_ROWS) {
         return;
     }
@@ -159,16 +159,16 @@ void display_slice_fill_alternating(uint8_t bg_color0, uint8_t bg_color1, displa
 #define U8_BITMASK_LEFT_DISPLAY_BITS(x) (-(1 << (8 - (x))))
 #define U8_BITMASK_RIGHT_DISPLAY_BITS(x) ((1 << (8 - (x))) - 1)
 
-void display_box_draw(uint8_t color, display_box box) {
+void display_box_draw(uint8_t color, display_box_t box) {
     display_box_draw_multicolor(1, &color, box);
 }
 
-void display_box_draw_alternating(uint8_t color0, uint8_t color1, display_box box) {
+void display_box_draw_alternating(uint8_t color0, uint8_t color1, display_box_t box) {
     uint8_t row_colors[2] = {color0, color1};
     display_box_draw_multicolor(2, row_colors, box);
 }
 
-void display_box_draw_multicolor(int color_count, uint8_t *row_colors, display_box box) {
+void display_box_draw_multicolor(int color_count, uint8_t *row_colors, display_box_t box) {
     if (BOX_FULLY_OFF_SCREEN(box) || BOX_EMPTY(box)) {
         return;
     }
@@ -228,7 +228,7 @@ void display_box_draw_multicolor(int color_count, uint8_t *row_colors, display_b
     playdate->graphics->markUpdatedRows(box.start_y, box.end_y - 1);
 }
 
-int display_box_collision(display_box box) {
+int display_box_collision(display_box_t box) {
     if (BOX_EMPTY(box)) {
         return 0;
     }
@@ -297,7 +297,7 @@ int display_box_collision(display_box box) {
     return 0;
 }
 
-int display_box_box_collision(display_box box1, display_box box2) {
+int display_box_box_collision(display_box_t box1, display_box_t box2) {
     // TODO: might give weird results if box1 or box2 are empty.
     // maybe just push that onto callers.
     return (
@@ -378,7 +378,7 @@ void test__core__display() {
     TEST(
         uint8_t clear_color = 123;
         uint8_t display_color = ~clear_color; // inverted
-        display_slice_fill(clear_color, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
+        display_slice_fill(clear_color, $(display_slice){.start_row = 0, .end_row = LCD_ROWS});
         const uint8_t *display_buffer = display();
         for (int y = 0; y < LCD_ROWS; ++y)
         for (int byte = 0; byte < LCD_COLUMNS / 8; ++byte) {
@@ -394,8 +394,8 @@ void test__core__display() {
     );
 
     TEST(
-        display_slice_fill(0, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
-        display_box_draw(255, (display_box){.start_x = 8, .end_x = 16, .start_y = 35, .end_y = 40});
+        display_slice_fill(0, $(display_slice){.start_row = 0, .end_row = LCD_ROWS});
+        display_box_draw(255, $(display_box){.start_x = 8, .end_x = 16, .start_y = 35, .end_y = 40});
         const uint8_t *display_buffer = display();
         for (int y = 0; y < LCD_ROWS; ++y)
         for (int byte = 0; byte < LCD_COLUMNS / 8; ++byte) {
@@ -412,8 +412,8 @@ void test__core__display() {
 
     TEST(
         for (int offset = 0; offset < 10; offset += 1) {
-            display_slice_fill(0, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
-            display_box_draw(255, (display_box){
+            display_slice_fill(0, $(display_slice){.start_row = 0, .end_row = LCD_ROWS});
+            display_box_draw(255, $(display_box){
                 .start_x = 8 + offset,
                 .end_x = 18 + offset,
                 .start_y = 35 + offset,
@@ -441,20 +441,20 @@ void test__core__display() {
         for (int clear_color_int = 0; clear_color_int <= 255; clear_color_int += 85) {
             uint8_t bg_color = clear_color_int;
             uint8_t fg_color = ~bg_color; 
-            display_slice_fill(bg_color, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
+            display_slice_fill(bg_color, $(display_slice){.start_row = 0, .end_row = LCD_ROWS});
             for (int start_x = -1; start_x < LCD_COLUMNS; start_x += 131)
             for (int end_x = start_x + 1; end_x <= start_x + 55; end_x += 27)
             for (int start_y = -1; start_y < LCD_ROWS; start_y += 130)
             for (int end_y = start_y + 1; end_y <= start_y + 18; end_y += 19) {
                 /*printf("at %d box{x=[%d, %d), y=[%d, %d)}\n",
                         clear_color_int, start_x, end_x, start_y, end_y); */
-                display_box_draw(fg_color, (display_box){
+                display_box_draw(fg_color, $(display_box){
                     .start_x = start_x,
                     .end_x = end_x,
                     .start_y = start_y,
                     .end_y = end_y,
                 });
-                display_box_draw(bg_color, (display_box){
+                display_box_draw(bg_color, $(display_box){
                     .start_x = start_x,
                     .end_x = end_x,
                     .start_y = start_y,
@@ -479,7 +479,7 @@ void test__core__display() {
 
     TEST(
         const uint8_t *display_buffer = display();
-        display_slice_fill(0, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
+        display_slice_fill(0, $(display_slice){.start_row = 0, .end_row = LCD_ROWS});
         for (int i = 0; i < 32; ++i) {
             test_tile_data[i] = 8 * (i - 3);
         }

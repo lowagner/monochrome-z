@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-enum tile_type {
+enum tile_type_t {
     kTileTypePassable,
     kTileTypeImpassable,
     /* TODO

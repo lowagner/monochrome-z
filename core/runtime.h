@@ -7,7 +7,7 @@
 // for later in our update(void *) function.
 #include STRINGIFY(PD_PROJECT_MODES)
 
-enum runtime_mode {
+enum runtime_mode_t {
     kRuntimeModeWipe = -1,
     kRuntimeModeNone = 0,
     // TODO: ModeMenu
@@ -19,7 +19,7 @@ enum runtime_mode {
     #endif
 };
 
-struct runtime {
+typedef struct runtime {
     // readonly `int update(void *)` function pointer:
     int (*const update)(void *);
     struct {
@@ -36,10 +36,11 @@ struct runtime {
         uint8_t up;
     }
         transition;
-};
+}
+    runtime_t;
 
 
-extern struct runtime runtime;
+extern runtime_t runtime;
 
 typedef struct runtime_menu {
     // will be set by calling runtime_add_menu.
@@ -55,12 +56,12 @@ typedef struct runtime_menu {
     // called once when the menu is created.  will clamp to [0, option_count - 1].
     int (*get_index_from_value)(void);
 }
-    runtime_menu;
+    runtime_menu_t;
 
 // returns 1 if successful, otherwise 0.
-int runtime_add_menu(runtime_menu *menu);
+int runtime_add_menu(runtime_menu_t *menu);
 
 // You should define this in your main.c (or elsewhere).
-void default_update(display_slice slice);
+void default_update(display_slice_t slice);
 // You should also define this in your main.c (or elsewhere).
 void initialize();

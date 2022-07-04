@@ -23,7 +23,7 @@ void initialize() {
     runtime.transition.next_mode = kRuntimeModeSnake;
 }
 
-void default_update(display_slice slice) {
+void default_update(display_slice_t slice) {
     display_slice_fill(0, slice);
     // TODO: push this logic into a display_text() method
     int title_length = strlen(title.value);

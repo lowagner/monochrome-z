@@ -18,6 +18,6 @@ tile_editor_t tile_editor = {
     },
 };
 
-void tile_editor_update(display_slice slice) {
+void tile_editor_update(display_slice_t slice) {
     // TODO:
 }

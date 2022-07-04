@@ -5,7 +5,7 @@
 
 #include <string.h> // memcpy
 
-enum snake_direction {
+enum snake_direction_t {
     kSnakeDirectionRight = 0,
     kSnakeDirectionUp = 1,
     kSnakeDirectionLeft = 2,
@@ -21,7 +21,7 @@ typedef struct snake_piece {
     uint8_t direction;  // use snake_direction enum
     uint8_t dizzy;  // read from the trail.
 }
-    snake_piece;
+    snake_piece_t;
 
 typedef struct snake_state {
     int counter;
@@ -31,34 +31,34 @@ typedef struct snake_state {
     // we actually advance the snake, so we can see if we
     // want to move diagonally:
     int desired_direction;
-    snake_piece head;
-    snake_piece tail;
+    snake_piece_t head;
+    snake_piece_t tail;
     int size_delta;
     struct {
-        display_box box;
+        display_box_t box;
         int present;
     }
         apple;
     int game_over;
     uint64_t score;
 }
-    snake_state;
+    snake_state_t;
 
 static void snake_advance();
 static void snake_advance_head();
 static void snake_advance_tail();
-static void snake_advance_piece_no_draw(snake_piece *piece);
-static int snake_random_walk(snake_piece *piece);
+static void snake_advance_piece_no_draw(snake_piece_t *piece);
+static int snake_random_walk(snake_piece_t *piece);
 static void snake_clear(int left_x, int top_y);
-static void snake_draw_no_trail(const snake_piece *piece);
-static void snake_draw(const snake_piece *piece);
-static void snake_draw_tail(const snake_piece *piece);
-static void snake_read_direction_and_dizziness_from_trail(snake_piece *piece);
-static int snake_check_collisions(const snake_piece *piece);
+static void snake_draw_no_trail(const snake_piece_t *piece);
+static void snake_draw(const snake_piece_t *piece);
+static void snake_draw_tail(const snake_piece_t *piece);
+static void snake_read_direction_and_dizziness_from_trail(snake_piece_t *piece);
+static int snake_check_collisions(const snake_piece_t *piece);
 static void snake_maybe_add_apple();
 static int snake_add_apple();
 
-snake_info next_snake = {
+snake_info_t next_snake = {
     .starting_length = 16,
     .size = 10,
     // TODO: add support for dizziness
@@ -67,8 +67,8 @@ snake_info next_snake = {
 };
 
 static struct snake {
-    snake_info info;
-    snake_state state;
+    snake_info_t info;
+    snake_state_t state;
 }
     snake;
 
@@ -105,7 +105,7 @@ const char *snake_speed_options[] = {
     "11",
 };
 
-runtime_menu snake_speed_menu = {
+runtime_menu_t snake_speed_menu = {
     .pd_menu = NULL,
     .title = "speed",
     .options = snake_speed_options,
@@ -145,7 +145,7 @@ const char *snake_length_options[] = {
     "2048",
 };
 
-runtime_menu snake_length_menu = {
+runtime_menu_t snake_length_menu = {
     .pd_menu = NULL,
     .title = "length",
     .options = snake_length_options,
@@ -192,7 +192,7 @@ const char *snake_size_options[] = {
     "40",
 };
 
-runtime_menu snake_size_menu = {
+runtime_menu_t snake_size_menu = {
     .pd_menu = NULL,
     .title = "size",
     .options = snake_size_options,
@@ -211,7 +211,7 @@ static void snake_initialize() {
     snake_needs_init = 0;
 }
 
-void snake_reset(display_slice slice) {
+void snake_reset(display_slice_t slice) {
     playdate->system->logToConsole("snake reset");
     snake.info = next_snake;
     if (snake.info.size < 2) {
@@ -222,11 +222,11 @@ void snake_reset(display_slice slice) {
     // require being at least 2 units long:
     next_snake.starting_length = next_snake.starting_length > 2 ? next_snake.starting_length : 2;
     uint32_t time = playdate->system->getCurrentTimeMilliseconds();
-    snake.state = (snake_state){
+    snake.state = $(snake_state){
         .counter = 0,
         .current_length = next_snake.starting_length,
         .desired_direction = kSnakeDirectionRight,
-        .head = (snake_piece){
+        .head = $(snake_piece){
             .x = 2 * snake.info.size,
             .y = 3 * snake.info.size,
             .lfsr = time ? time : 1,
@@ -240,7 +240,7 @@ void snake_reset(display_slice slice) {
         .score = 0,
     };
     snake.state.apple.present = 0;
-    memcpy(&snake.state.tail, &snake.state.head, sizeof(snake_piece));
+    memcpy(&snake.state.tail, &snake.state.head, sizeof $(snake_piece));
     snake_advance_piece_no_draw(&snake.state.head);
 
     display_slice_fill(0, slice);
@@ -252,7 +252,7 @@ void snake_reset(display_slice slice) {
 
 static void snake_game_loop();
 
-void snake_update(display_slice slice) {
+void snake_update(display_slice_t slice) {
     if (runtime.transition.counter) {
         if (runtime.transition.next_mode != kRuntimeModeSnake) {
             // we'll need to add back menus next time, since
@@ -361,8 +361,8 @@ void snake_advance() {
 
 static void snake_advance_head() {
     playdate->system->logToConsole("adv snk head from %d, %d", snake.state.head.x, snake.state.head.y);
-    snake_piece old_snake_head;
-    memcpy(&old_snake_head, &snake.state.head, sizeof(snake_piece));
+    snake_piece_t old_snake_head;
+    memcpy(&old_snake_head, &snake.state.head, sizeof $(snake_piece));
     // we actually want to clear out the old head so the
     // new head doesn't collide with it accidentally due to dizziness.
     snake_clear(old_snake_head.x, old_snake_head.y);
@@ -394,7 +394,7 @@ static void snake_advance_tail() {
     snake_draw_tail(&snake.state.tail);
 }
 
-static void snake_advance_piece_no_draw(snake_piece *piece) {
+static void snake_advance_piece_no_draw(snake_piece_t *piece) {
     // does not actually draw, in case we're the tail (where we don't want to overwrite the trail)
     // or the head (where we want to check collisions first).
     int delta_orthogonal = snake_random_walk(piece);
@@ -425,7 +425,7 @@ static void snake_advance_piece_no_draw(snake_piece *piece) {
     playdate->system->logToConsole("* advanced snk piece to %d, %d", piece->x, piece->y);
 }
 
-static int snake_random_walk(snake_piece *piece) {
+static int snake_random_walk(snake_piece_t *piece) {
     if (piece->dizzy == 0) {
         return 0;
     }
@@ -445,7 +445,7 @@ static int snake_random_walk(snake_piece *piece) {
 
 static void snake_clear(int left_x, int top_y) {
     playdate->system->logToConsole("clear snk piece %d, %d", left_x, top_y);
-    display_box_draw(0, (display_box){
+    display_box_draw(0, $(display_box){
         .start_x = left_x,
         .start_y = top_y,
         .end_x = left_x + snake.info.size,
@@ -453,13 +453,13 @@ static void snake_clear(int left_x, int top_y) {
     });
 }
 
-static void snake_draw_no_trail(const snake_piece *piece) {
+static void snake_draw_no_trail(const snake_piece_t *piece) {
     playdate->system->logToConsole("drw snk piece %d, %d", piece->x, piece->y);
     // TODO: for large enough snake size, don't draw the left/right sides of the
     // snake, so that it's easier to see the snake's lines when going along-side itself.
     // make sure that corners work out ok, though.  maybe have an "incoming_direction"
-    // on the snake_piece.
-    display_box_draw(255, (display_box){
+    // on the snake_piece_t.
+    display_box_draw(255, $(display_box){
         .start_x = piece->x,
         .start_y = piece->y,
         .end_x = piece->x + snake.info.size,
@@ -467,7 +467,7 @@ static void snake_draw_no_trail(const snake_piece *piece) {
     });
 }
 
-static void snake_draw(const snake_piece *piece) {
+static void snake_draw(const snake_piece_t *piece) {
     snake_draw_no_trail(piece);
     int half_size = snake.info.size / 2;
     if (snake.info.size % 2) {
@@ -519,7 +519,7 @@ static void snake_draw(const snake_piece *piece) {
     }
 }
 
-static void snake_draw_tail(const snake_piece *piece) {
+static void snake_draw_tail(const snake_piece_t *piece) {
     snake_draw(piece);
     if (snake.info.size <= 2) {
         return;
@@ -574,7 +574,7 @@ static void snake_draw_tail(const snake_piece *piece) {
     }
 }
 
-static void snake_read_direction_and_dizziness_from_trail(snake_piece *piece) {
+static void snake_read_direction_and_dizziness_from_trail(snake_piece_t *piece) {
     // could optimize for current heading (piece->direction),
     // i.e., since you can't go backwards, but that makes the code a bit messy.
     int half_size = snake.info.size / 2;
@@ -659,9 +659,9 @@ static void snake_read_direction_and_dizziness_from_trail(snake_piece *piece) {
     }
 }
 
-static int snake_check_collisions(const snake_piece *piece) {
+static int snake_check_collisions(const snake_piece_t *piece) {
     playdate->system->logToConsole("checking collisions @ %d, %d", piece->x, piece->y);
-    display_box snake_box = {
+    display_box_t snake_box = {
         .start_x = piece->x,
         .start_y = piece->y,
         .end_x = piece->x + snake.info.size,
@@ -707,9 +707,9 @@ static int snake_add_apple() {
 
 #ifndef NDEBUG
 void test__mode__snake() {
-    snake_piece test_piece;
+    snake_piece_t test_piece;
     TEST(
-        display_slice_fill(0, (display_slice){.start_row = 0, .end_row = LCD_ROWS});
+        display_slice_fill(0, $(display_slice){.start_row = 0, .end_row = LCD_ROWS});
         snake.info.size = 9;
         test_piece.x = 12;
         test_piece.y = 13;
