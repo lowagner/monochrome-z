@@ -103,6 +103,11 @@ static void update_mode(int mode, display_slice slice) {
             snake_update(slice);
             return;
         #endif
+        #ifdef MODE_TILE_EDITOR
+        case kRuntimeModeTileEditor:
+            tile_editor_update(slice);
+            return;
+        #endif
         default:
             default_update(slice);
             return;

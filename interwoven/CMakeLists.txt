@@ -6,6 +6,7 @@ set(NEEDED_LIBRARIES
 
 set(NEEDED_MODES
     snake
+    tile-editor
 )
 
 # Game Name Customization

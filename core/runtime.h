@@ -14,6 +14,9 @@ enum runtime_mode {
     #ifdef MODE_SNAKE
     kRuntimeModeSnake,
     #endif
+    #ifdef MODE_TILE_EDITOR
+    kRuntimeModeTileEditor,
+    #endif
 };
 
 struct runtime {
