@@ -17,6 +17,7 @@ void initialize() {
     test__core__data();
     test__core__display();
     test__core__error();
+    test__core__tile();
     test__mode__snake();
     #endif
     font_load("/System/Fonts/Asheville-Sans-14-Bold.pft");

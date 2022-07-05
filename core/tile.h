@@ -3,8 +3,9 @@
 #include <stdint.h>
 
 enum tile_type_t {
-    kTileTypePassable,
-    kTileTypeImpassable,
+    kTileTypeUnknown = 0,
+    kTileTypePassable = 1,
+    kTileTypeImpassable = 2,
     /* TODO
     kTileTypeLadderNorth,
     kTileTypeDoorwayNorth,
