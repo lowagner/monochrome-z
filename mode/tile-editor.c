@@ -1,6 +1,7 @@
 #include "tile-editor.h"
 
 #include "../core/buttons.h"
+#include "../core/data.h"
 #include "../core/display.h"
 #include "../core/runtime.h"
 
@@ -13,12 +14,15 @@ tile_editor_t tile_editor = {
         .type = 0,
         .data1 = {0},
     },
+    .initialization = 256,
     .drawing = {
         .color = 1,
         .cursor_x = 0,
         .cursor_y = 0,
     },
 };
+
+static void tile_editor_draw_big_pixel(int x, int y);
 
 const char *tile_editor_tiles[] = {
     "000", "001", "002", "003", "004", "005", "006", "007", "008", "009",
@@ -111,7 +115,60 @@ void tile_editor_update(display_slice_t slice) {
     }
     if (tile_editor_save_menu.pd_menu == NULL) {
         display_slice_fill(0, slice);
+        tile_editor.initialization = 256,
         runtime_add_menu(&tile_editor_save_menu);
         runtime_add_menu(&tile_editor_action_menu);
+    } else if (tile_editor.initialization > 0) {
+        int pixel_index = --tile_editor.initialization;
+        tile_editor_draw_big_pixel(pixel_index % 16, pixel_index / 16);
+    } else {
+        uint8_t previous_x = tile_editor.drawing.cursor_x;
+        uint8_t previous_y = tile_editor.drawing.cursor_y;
+        tile_editor.drawing.cursor_x = (
+                tile_editor.drawing.cursor_x + (
+                        ( (buttons.pushed & kButtonLeft) ? 15 : 0 )
+                    +   ( (buttons.pushed & kButtonRight) ? 1 : 0 )
+                )
+        ) % 16;
+        tile_editor.drawing.cursor_y = (
+                tile_editor.drawing.cursor_y + (
+                        ( (buttons.pushed & kButtonUp) ? 15 : 0 )
+                    +   ( (buttons.pushed & kButtonDown) ? 1 : 0 )
+                )
+        ) % 16;
+        if (
+                tile_editor.drawing.cursor_x != previous_x
+            ||  tile_editor.drawing.cursor_y != previous_y
+        ) {
+            playdate->system->logToConsole(
+                "cursor to (%d, %d)",
+                tile_editor.drawing.cursor_x, tile_editor.drawing.cursor_y
+            );
+            tile_editor_draw_big_pixel(previous_x, previous_y);
+            tile_editor_draw_big_pixel(tile_editor.drawing.cursor_x, tile_editor.drawing.cursor_y);
+        }
+    }
+}
+
+static void tile_editor_draw_big_pixel(int x, int y) {
+    data_u1s_t u1s;
+    data_u1s_initialize(&u1s, 16 * y + x);
+    uint8_t fill_value = 255 * data_u1s_get(&u1s, tile_editor.tile.data1);
+    display_box_fill(fill_value, $(display_box){
+        .start_x = 13 * (x + 1),
+        .end_x = 13 * (x + 1) + 12,
+        .start_y = 13 * (y + 1),
+        .end_y = 13 * (y + 1) + 12,
+    });
+    if (
+            x == tile_editor.drawing.cursor_x
+        &&  y == tile_editor.drawing.cursor_y
+    ) {
+        display_box_fill(~fill_value, $(display_box){
+            .start_x = 13 * (x + 1) + 4,
+            .end_x = 13 * (x + 1) + 8,
+            .start_y = 13 * (y + 1) + 4,
+            .end_y = 13 * (y + 1) + 8,
+        });
     }
 }

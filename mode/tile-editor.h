@@ -8,6 +8,7 @@
 
 typedef struct tile_editor {
     tile_t tile;
+    uint8_t initialization;
     struct {
         uint8_t color;
         /* TODO: add for crank circles?

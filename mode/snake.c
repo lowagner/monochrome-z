@@ -445,7 +445,7 @@ static int snake_random_walk(snake_piece_t *piece) {
 
 static void snake_clear(int left_x, int top_y) {
     playdate->system->logToConsole("clear snk piece %d, %d", left_x, top_y);
-    display_box_draw(0, $(display_box){
+    display_box_fill(0, $(display_box){
         .start_x = left_x,
         .start_y = top_y,
         .end_x = left_x + snake.info.size,
@@ -459,7 +459,7 @@ static void snake_draw_no_trail(const snake_piece_t *piece) {
     // snake, so that it's easier to see the snake's lines when going along-side itself.
     // make sure that corners work out ok, though.  maybe have an "incoming_direction"
     // on the snake_piece_t.
-    display_box_draw(255, $(display_box){
+    display_box_fill(255, $(display_box){
         .start_x = piece->x,
         .start_y = piece->y,
         .end_x = piece->x + snake.info.size,
@@ -700,7 +700,7 @@ static int snake_add_apple() {
     if (display_box_collision(snake.state.apple.box)) {
         return 0;
     }
-    display_box_draw_alternating(85, 170, snake.state.apple.box);
+    display_box_fill_alternating(85, 170, snake.state.apple.box);
     snake.state.apple.present = 1;
     return 1;
 }
