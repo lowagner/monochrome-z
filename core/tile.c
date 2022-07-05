@@ -28,7 +28,7 @@ int tile_load(tile_t *load_here, const char *file_name) {
     return 1;
 }
 
-int tile_save(tile_t *from_here, const char *file_name) {
+int tile_save(const tile_t *from_here, const char *file_name) {
     SDFile* file = playdate->file->open(file_name, kFileWrite);
     if (playdate->file->write(file, &from_here->type, 1) != 1) {
         return 0;

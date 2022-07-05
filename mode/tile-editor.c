@@ -66,6 +66,44 @@ runtime_menu_t tile_editor_save_menu = {
     .get_index_from_value = tile_editor_tile_get_index,
 };
 
+const char *tile_editor_actions[] = {
+    "none",
+    "save",
+    "load",
+};
+
+void tile_editor_action_set_value(int action_index) {
+    if (action_index == 0) {
+        return;
+    }
+    const char *tile_name = tile_editor_tiles[tile_editor.tile.index];
+    char tile_file_name[9] = {
+        tile_name[0], tile_name[1], tile_name[2],
+        '.', 't', 'i', 'l', 'e',
+        0
+    };
+    int success = action_index == 1
+        ?   tile_save(&tile_editor.tile, tile_file_name)
+        :   tile_load(&tile_editor.tile, tile_file_name);
+    if (!success) {
+        playdate->system->logToConsole("could not load/save %s", tile_file_name);
+    }
+}
+
+int tile_editor_action_get_index() {
+    // always default to "none" so we don't save/load accidentally.
+    return 0;
+}
+
+runtime_menu_t tile_editor_action_menu = {
+    .pd_menu = NULL,
+    .title = "action",
+    .options = tile_editor_actions,
+    .option_count = 3,
+    .set_value_from_index = tile_editor_action_set_value,
+    .get_index_from_value = tile_editor_action_get_index,
+};
+
 void tile_editor_update(display_slice_t slice) {
     if (runtime.transition.counter || runtime.transition.next_mode != kRuntimeModeTileEditor) {
         display_slice_fill(255, slice);
@@ -74,5 +112,6 @@ void tile_editor_update(display_slice_t slice) {
     if (tile_editor_save_menu.pd_menu == NULL) {
         display_slice_fill(0, slice);
         runtime_add_menu(&tile_editor_save_menu);
+        runtime_add_menu(&tile_editor_action_menu);
     }
 }

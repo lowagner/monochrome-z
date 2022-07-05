@@ -39,4 +39,4 @@ extern tile_t tiles[256];
 int tile_load(tile_t *load_here, const char *file_name);
 
 // returns 0 if not written, 1 if written.
-int tile_save(tile_t *from_here, const char *file_name);
+int tile_save(const tile_t *save_this, const char *file_name);
