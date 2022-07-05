@@ -20,6 +20,8 @@ struct runtime runtime = {
 static int runtime_mode = kRuntimeModeWipe;
 static int runtime_menu_count = 0;
 
+static runtime_menu_t *runtime_menus[3] = {NULL, NULL, NULL};
+
 static int update(void *unused) {
     buttons_update();
     if (runtime.transition.next_mode != runtime_mode) {
@@ -33,7 +35,15 @@ static int update(void *unused) {
             runtime_mode = runtime.transition.next_mode;
             playdate->system->logToConsole("finished transition to mode %d", runtime_mode);
             playdate->system->removeAllMenuItems();
-            runtime_menu_count = 0;
+            while (runtime_menu_count > 0) {
+                runtime_menu_t *menu = runtime_menus[--runtime_menu_count];
+                if (menu == NULL) {
+                    playdate->system->logToConsole("expected a menu at %d", runtime_menu_count);
+                    continue;
+                }
+                menu->pd_menu = NULL;
+                runtime_menus[runtime_menu_count] = NULL;
+            }
             goto no_transition_update;
         }
         if (runtime.transition.up) {
@@ -145,7 +155,7 @@ int runtime_add_menu(runtime_menu_t *menu) {
     if (runtime_menu_count >= 3 || menu->option_count == 0) {
         return 0;
     }
-    ++runtime_menu_count;
+    runtime_menus[runtime_menu_count++] = menu;
     menu->pd_menu = playdate->system->addOptionsMenuItem(
         menu->title,
         menu->options,
