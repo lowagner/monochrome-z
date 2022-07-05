@@ -7,6 +7,9 @@
 
 #include <string.h> // memcpy
 
+static void tile_editor_draw_big_pixel(int x, int y);
+static void tile_editor_color_pixel(int x, int y);
+
 tile_editor_t tile_editor = {
     .tile = {
         // mostly ignored for tile_editor:
@@ -21,8 +24,6 @@ tile_editor_t tile_editor = {
         .cursor_y = 0,
     },
 };
-
-static void tile_editor_draw_big_pixel(int x, int y);
 
 const char *tile_editor_tiles[] = {
     "000", "001", "002", "003", "004", "005", "006", "007", "008", "009",
@@ -144,8 +145,17 @@ void tile_editor_update(display_slice_t slice) {
                 "cursor to (%d, %d)",
                 tile_editor.drawing.cursor_x, tile_editor.drawing.cursor_y
             );
+            // redraw the previous pixel to remove the cursor:
             tile_editor_draw_big_pixel(previous_x, previous_y);
-            tile_editor_draw_big_pixel(tile_editor.drawing.cursor_x, tile_editor.drawing.cursor_y);
+            if (buttons.current & kButtonA) {
+                // this also redraws the pixel:
+                tile_editor_color_pixel(tile_editor.drawing.cursor_x, tile_editor.drawing.cursor_y);
+            } else {
+                // redraw the pixel to show the cursor:
+                tile_editor_draw_big_pixel(tile_editor.drawing.cursor_x, tile_editor.drawing.cursor_y);
+            }
+        } else if (buttons.pushed & kButtonA) {
+            tile_editor_color_pixel(tile_editor.drawing.cursor_x, tile_editor.drawing.cursor_y);
         }
     }
 }
@@ -171,4 +181,18 @@ static void tile_editor_draw_big_pixel(int x, int y) {
             .end_y = 13 * (y + 1) + 8,
         });
     }
+}
+
+static void tile_editor_color_pixel(int x, int y) {
+    data_u1s_t u1s;
+    data_u1s_initialize(&u1s, y * 16 + x);
+    switch (tile_editor.drawing.color) {
+        case 2:
+            data_u1s_flip(&u1s, tile_editor.tile.data1);
+            break;
+        default:
+            data_u1s_set(&u1s, tile_editor.tile.data1, tile_editor.drawing.color);
+            break;
+    }
+    tile_editor_draw_big_pixel(x, y);
 }
