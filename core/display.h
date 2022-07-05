@@ -37,7 +37,7 @@ typedef struct display_box {
 
 void display_box_fill(uint8_t color, display_box_t box);
 void display_box_fill_alternating(uint8_t color0, uint8_t color1, display_box_t box);
-void display_box_fill_multicolor(int color_count, uint8_t *row_colors, display_box_t box);
+void display_box_fill_multicolor(int color_count, const uint8_t *row_colors, display_box_t box);
 // will return "1" if your box collides with currently drawn pixels (based on inversion).
 // going off-screen will also count as a collision, since we pretend that there is a wall there.
 int display_box_collision(display_box_t box);

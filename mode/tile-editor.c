@@ -9,6 +9,18 @@
 
 static void tile_editor_draw_big_pixel(int x, int y);
 static void tile_editor_color_pixel(int x, int y);
+static void tile_editor_change_brush_color();
+static void tile_editor_draw_brush_color();
+
+enum tile_editor_color_t {
+    TileEditorColorClear = 0,
+    TileEditorColorBlack = 1,
+    TileEditorColorInvert,
+    TileEditorColorCheckerboardOdd,
+    TileEditorColorCheckerboardEven,
+    // do not actually use
+    TileEditorColorSentinel,
+};
 
 tile_editor_t tile_editor = {
     .tile = {
@@ -17,9 +29,9 @@ tile_editor_t tile_editor = {
         .type = 0,
         .data1 = {0},
     },
-    .initialization = 256,
+    .initialization = 16,
     .drawing = {
-        .color = 1,
+        .color = TileEditorColorBlack,
         .cursor_x = 0,
         .cursor_y = 0,
     },
@@ -116,13 +128,19 @@ void tile_editor_update(display_slice_t slice) {
     }
     if (tile_editor_save_menu.pd_menu == NULL) {
         display_slice_fill(0, slice);
-        tile_editor.initialization = 256,
+        tile_editor.initialization = 16,
+        tile_editor_draw_brush_color();
         runtime_add_menu(&tile_editor_save_menu);
         runtime_add_menu(&tile_editor_action_menu);
     } else if (tile_editor.initialization > 0) {
-        int pixel_index = --tile_editor.initialization;
-        tile_editor_draw_big_pixel(pixel_index % 16, pixel_index / 16);
+        int tile_row = --tile_editor.initialization;
+        for (int x = 0; x < 16; ++x) {
+            tile_editor_draw_big_pixel(x, tile_row);
+        }
     } else {
+        if (buttons.pushed & kButtonB) {
+            tile_editor_change_brush_color();
+        }
         uint8_t previous_x = tile_editor.drawing.cursor_x;
         uint8_t previous_y = tile_editor.drawing.cursor_y;
         tile_editor.drawing.cursor_x = (
@@ -161,6 +179,7 @@ void tile_editor_update(display_slice_t slice) {
 }
 
 static void tile_editor_draw_big_pixel(int x, int y) {
+    playdate->system->logToConsole("drawing tile (%d, %d)", x, y);
     data_u1s_t u1s;
     data_u1s_initialize(&u1s, 16 * y + x);
     uint8_t fill_value = 255 * data_u1s_get(&u1s, tile_editor.tile.data1);
@@ -187,12 +206,49 @@ static void tile_editor_color_pixel(int x, int y) {
     data_u1s_t u1s;
     data_u1s_initialize(&u1s, y * 16 + x);
     switch (tile_editor.drawing.color) {
-        case 2:
+        case TileEditorColorInvert:
             data_u1s_flip(&u1s, tile_editor.tile.data1);
+            break;
+        case TileEditorColorCheckerboardOdd:
+            data_u1s_set(&u1s, tile_editor.tile.data1, (x + y) % 2);
+            break;
+        case TileEditorColorCheckerboardEven:
+            data_u1s_set(&u1s, tile_editor.tile.data1, 1 - (x + y) % 2);
             break;
         default:
             data_u1s_set(&u1s, tile_editor.tile.data1, tile_editor.drawing.color);
             break;
     }
     tile_editor_draw_big_pixel(x, y);
+}
+
+static void tile_editor_change_brush_color() {
+    tile_editor.drawing.color = (tile_editor.drawing.color + 1) % TileEditorColorSentinel;
+    tile_editor_draw_brush_color();
+}
+
+static void tile_editor_draw_brush_color() {
+    static const uint8_t checkerboard_colors[6] = {
+        204, 204, 51, 51, 204, 204,
+    };
+    display_box_t brush_box = {
+        .start_x = LCD_COLUMNS - 16,
+        .end_x = LCD_COLUMNS - 4,
+        .start_y = LCD_ROWS - 16,
+        .end_y = LCD_ROWS - 4,
+    };
+    switch (tile_editor.drawing.color) {
+        case TileEditorColorInvert:
+            display_box_fill_alternating(85, 170, brush_box);
+            break;
+        case TileEditorColorCheckerboardOdd:
+            display_box_fill_multicolor(4, checkerboard_colors + 2, brush_box);
+            break;
+        case TileEditorColorCheckerboardEven:
+            display_box_fill_multicolor(4, checkerboard_colors + 0, brush_box);
+            break;
+        default:
+            display_box_fill(255 * tile_editor.drawing.color, brush_box);
+            break;
+    }
 }

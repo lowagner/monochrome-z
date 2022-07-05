@@ -146,7 +146,7 @@ void display_box_fill_alternating(uint8_t color0, uint8_t color1, display_box_t 
     display_box_fill_multicolor(2, row_colors, box);
 }
 
-void display_box_fill_multicolor(int color_count, uint8_t *row_colors, display_box_t box) {
+void display_box_fill_multicolor(int color_count, const uint8_t *row_colors, display_box_t box) {
     if (BOX_FULLY_OFF_SCREEN(box) || BOX_EMPTY(box)) {
         return;
     }
