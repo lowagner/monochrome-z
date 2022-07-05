@@ -34,4 +34,10 @@ typedef struct tile {
 
 extern tile_t tiles[256];
 
+// returns 0 if not loaded, 1 if loaded.
+int tile_load(tile_t *load_here, const char *file_name);
 
+// returns 0 if not written, 1 if written.
+int tile_write(tile_t *from_here, const char *file_name);
+
+int tile_type(uint8_t *tile_data1);

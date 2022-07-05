@@ -10,8 +10,13 @@ typedef struct tile_editor {
     tile_t tile;
     struct {
         uint8_t color;
+        /* TODO: add for crank circles?
+        uint8_t last_pixel_x;
         uint8_t last_pixel_y;
-        int16_t last_pixel_x;
+        */
+
+        uint8_t cursor_x;
+        uint8_t cursor_y;
     }
         drawing;
 }

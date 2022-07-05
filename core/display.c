@@ -37,53 +37,31 @@ void display_invert() {
     playdate->graphics->markUpdatedRows(0, LCD_ROWS - 1);
 }
 
-// sets a pixel to black (filled) regardless of inversion
-static void display_pixel_draw_black(int x, int y) {
-    if (x < 0 || x >= LCD_COLUMNS || y < 0 || y >= LCD_ROWS) {
-        return;
-    }
-    uint8_t *row_buffer = display() + ROW_STRIDE * y;
-    int byte = x / 8;
-    int bit = 7 - (x % 8); // most-significant-bits are left-most.
-    row_buffer[byte] &= ~(1 << bit);
-    playdate->graphics->markUpdatedRows(y, y);
-}
-
-// sets a pixel to white (cleared) regardless of inversion
-static void display_pixel_draw_white(int x, int y) {
-    if (x < 0 || x >= LCD_COLUMNS || y < 0 || y >= LCD_ROWS) {
-        return;
-    }
-    uint8_t *row_buffer = display() + ROW_STRIDE * y;
-    int byte = x / 8;
-    int bit = 7 - (x % 8); // most-significant-bits are left-most.
-    row_buffer[byte] |= 1 << bit;
-    playdate->graphics->markUpdatedRows(y, y);
-}
-
 void display_pixel_draw(int x, int y) {
-    // TODO: use data_booleans_set(!display_inversion) for this
-    if (display_inversion) {
-        display_pixel_draw_black(x, y);
-    } else {
-        display_pixel_draw_white(x, y);
+    if (x < 0 || x >= LCD_COLUMNS || y < 0 || y >= LCD_ROWS) {
+        return;
     }
+    data_u1s_t u1s;
+    data_u1s_initialize(&u1s, 8 * ROW_STRIDE * y + x);
+    data_u1s_set(&u1s, display(), !display_inversion);
+    playdate->graphics->markUpdatedRows(y, y);
 }
 
 void display_pixel_clear(int x, int y) {
-    // TODO: use data_booleans_set(display_inversion) for this
-    if (display_inversion) {
-        display_pixel_draw_white(x, y);
-    } else {
-        display_pixel_draw_black(x, y);
+    if (x < 0 || x >= LCD_COLUMNS || y < 0 || y >= LCD_ROWS) {
+        return;
     }
+    data_u1s_t u1s;
+    data_u1s_initialize(&u1s, 8 * ROW_STRIDE * y + x);
+    data_u1s_set(&u1s, display(), display_inversion);
+    playdate->graphics->markUpdatedRows(y, y);
 }
 
 int display_pixel_collision(int x, int y) {
     if (x < 0 || x >= LCD_COLUMNS || y < 0 || y >= LCD_ROWS) {
         return 1;
     }
-    // TODO: use data_booleans for this
+    // TODO: use data_u1s for this
     const uint8_t *row_buffer = display() + ROW_STRIDE * y;
     int byte = x / 8;
     int bit = 7 - (x % 8); // most-significant-bits are left-most.
@@ -340,10 +318,10 @@ void display_sprite_draw(display_sprite sprite) {
     } else if (end_pixel_y >= LCD_ROWS) {
         end_pixel_y = LCD_ROWS;
     }
-    data_booleans display_iterator;
-    data_u2s sprite_iterator;
+    data_u1s_t display_iterator;
+    data_u2s_t sprite_iterator;
     for (int16_t pixel_y = start_pixel_y; pixel_y < end_pixel_y; ++pixel_y) {
-        data_booleans_initialize(&display_iterator, pixel_y * ROW_STRIDE + start_pixel_x);
+        data_u1s_initialize(&display_iterator, pixel_y * ROW_STRIDE + start_pixel_x);
         data_u2s_initialize(&sprite_iterator, 
                 (pixel_y - sprite.y) * sprite.width / 4
             +   (start_pixel_x - sprite.x)
@@ -354,19 +332,19 @@ void display_sprite_draw(display_sprite sprite) {
 
             switch (u2) {
                 case 0:
-                    data_booleans_set(&display_iterator, display_buffer, PIXEL_OFF);
+                    data_u1s_set(&display_iterator, display_buffer, PIXEL_OFF);
                     break;
                 case 1:
-                    data_booleans_set(&display_iterator, display_buffer, PIXEL_ON);
+                    data_u1s_set(&display_iterator, display_buffer, PIXEL_ON);
                     break;
                 case 3:
-                    data_booleans_flip(&display_iterator, display_buffer);
+                    data_u1s_flip(&display_iterator, display_buffer);
                     break;
                 default:
                     // skip doing anything to display, including case 2.
                     break;
             }
-            data_booleans_increment(&display_iterator);
+            data_u1s_increment(&display_iterator);
         }
     }
     playdate->graphics->markUpdatedRows(start_pixel_y, end_pixel_y - 1);

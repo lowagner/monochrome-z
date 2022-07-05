@@ -13,8 +13,8 @@ tile_editor_t tile_editor = {
     },
     .drawing = {
         .color = 1,
-        .last_pixel_y = LCD_ROWS / 2,
-        .last_pixel_x = LCD_COLUMNS / 2,
+        .cursor_x = 0,
+        .cursor_y = 0,
     },
 };
 
