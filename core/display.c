@@ -286,7 +286,7 @@ int display_box_box_collision(display_box_t box1, display_box_t box2) {
     );
 }
 
-void display_tile_draw(display_tile tile) {
+void display_tile_draw(display_tile_t tile) {
     uint8_t *display_buffer = display();
     ASSERT(tile.x_over_8 <= (400 - 16) / 8);
     ASSERT(tile.y <= 240 - 16);
@@ -297,6 +297,7 @@ void display_tile_draw(display_tile tile) {
         display_buffer[row * ROW_STRIDE + tile.x_over_8 + 0] = (*tile_data++) ^ display_inversion;
         display_buffer[row * ROW_STRIDE + tile.x_over_8 + 1] = (*tile_data++) ^ display_inversion;
     }
+    playdate->graphics->markUpdatedRows(tile.y, tile.y + 15);
 }
 
 void display_sprite_draw(display_sprite sprite) {
@@ -461,7 +462,7 @@ void test__core__display() {
         for (int i = 0; i < 32; ++i) {
             test_tile_data[i] = 8 * (i - 3);
         }
-        display_tile_draw((display_tile){
+        display_tile_draw($(display_tile){
             .data1 = test_tile_data,
             .x_over_8 = 5,
             .y = 7,

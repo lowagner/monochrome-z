@@ -11,6 +11,7 @@ static void tile_editor_draw_big_pixel(int x, int y);
 static void tile_editor_color_pixel(int x, int y);
 static void tile_editor_change_brush_color();
 static void tile_editor_draw_brush_color();
+static void tile_editor_draw_field();
 
 enum tile_editor_color_t {
     TileEditorColorClear = 0,
@@ -130,6 +131,7 @@ void tile_editor_update(display_slice_t slice) {
         display_slice_fill(0, slice);
         tile_editor.initialization = 16,
         tile_editor_draw_brush_color();
+        tile_editor_draw_field();
         runtime_add_menu(&tile_editor_save_menu);
         runtime_add_menu(&tile_editor_action_menu);
     } else if (tile_editor.initialization > 0) {
@@ -220,6 +222,7 @@ static void tile_editor_color_pixel(int x, int y) {
             break;
     }
     tile_editor_draw_big_pixel(x, y);
+    tile_editor_draw_field();
 }
 
 static void tile_editor_change_brush_color() {
@@ -250,5 +253,16 @@ static void tile_editor_draw_brush_color() {
         default:
             display_box_fill(255 * tile_editor.drawing.color, brush_box);
             break;
+    }
+}
+
+static void tile_editor_draw_field() {
+    for (int row = 0; row < 3; ++row)
+    for (int column = 0; column < 3; ++column) {
+        display_tile_draw($(display_tile) {
+            .data1 = tile_editor.tile.data1,
+            .x_over_8 = (LCD_COLUMNS - 4 * 16 + column * 16) / 8,
+            .y = 16 + 16 * row,
+        });
     }
 }

@@ -61,13 +61,13 @@ typedef struct display_tile {
                         //  but the drawing algorithm only cares that they are multiples of 8.)
     uint8_t y;          // the top of the tile (no restrictions).
 }
-    display_tile;
+    display_tile_t;
 
 // draws the tile to the display.  note that the tile should be completely on-screen,
 // otherwise there will be some undefined behavior.
 // i.e., x_over_8 should be between 0 and 48 (x_max = 400 - 16), inclusive,
 //   and y should be between 0 and 224 = 240 - 16, inclusive.
-void display_tile_draw(display_tile tile);
+void display_tile_draw(display_tile_t tile);
 
 // a sprite of variable size, with transparency options.
 // meant to fit into 96 bits = 12 bytes (on 32 bit architecture).
