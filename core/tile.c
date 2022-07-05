@@ -21,14 +21,14 @@ int tile_load(tile_t *load_here, const char *file_name) {
     memcpy(load_here->data1, buffer + 1, 32);
     if (playdate->file->close(file)) {
         playdate->system->logToConsole(
-            "error closing read file %s: %s",
+            "error closing loaded tile file %s: %s",
             file_name, playdate->file->geterr()
         );
     }
     return 1;
 }
 
-int tile_write(tile_t *from_here, const char *file_name) {
+int tile_save(tile_t *from_here, const char *file_name) {
     SDFile* file = playdate->file->open(file_name, kFileWrite);
     if (playdate->file->write(file, &from_here->type, 1) != 1) {
         return 0;
@@ -38,7 +38,7 @@ int tile_write(tile_t *from_here, const char *file_name) {
     }
     if (playdate->file->close(file)) {
         playdate->system->logToConsole(
-            "error closing written file %s: %s",
+            "error closing saved tile file %s: %s",
             file_name, playdate->file->geterr()
         );
     }
@@ -47,18 +47,18 @@ int tile_write(tile_t *from_here, const char *file_name) {
 
 #ifndef NDEBUG
 void test__core__tile() {
-    tile_t test_written_tile;
+    tile_t test_saved_tile;
     tile_t test_loaded_tile;
     TEST(
-        test_written_tile.type = 140;
+        test_saved_tile.type = 140;
         for (int i = 0; i < 32; ++i) {
-            test_written_tile.data1[i] = 64 + 3 * i;
+            test_saved_tile.data1[i] = 64 + 3 * i;
         }
-        EXPECT_INT_EQUAL_LOGGED(tile_write(&test_written_tile, "test-tile-123"), 1);
+        EXPECT_INT_EQUAL_LOGGED(tile_save(&test_saved_tile, "test-tile-123"), 1);
         EXPECT_INT_EQUAL_LOGGED(tile_load(&test_loaded_tile, "test-tile-123"), 1);
-        EXPECT_INT_EQUAL_LOGGED(test_loaded_tile.type, test_written_tile.type);
+        EXPECT_INT_EQUAL_LOGGED(test_loaded_tile.type, test_saved_tile.type);
         for (int i = 0; i < 32; ++i) {
-            EXPECT_INT_EQUAL_LOGGED(test_loaded_tile.data1[i], 64 + 3 * i);
+            EXPECT_INT_EQUAL_LOGGED(test_loaded_tile.data1[i], test_saved_tile.data1[i]);
         },
         "%s: loading after saving", AT
     );
