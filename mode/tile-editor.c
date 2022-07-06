@@ -12,6 +12,7 @@ static void tile_editor_color_pixel(int x, int y);
 static void tile_editor_change_brush_color();
 static void tile_editor_draw_brush_color();
 static void tile_editor_draw_field();
+static void tile_editor_full_redraw();
 
 enum tile_editor_color_t {
     TileEditorColorClear = 0,
@@ -100,13 +101,15 @@ void tile_editor_action_set_value(int action_index) {
         '.', 't', 'i', 'l', 'e',
         0
     };
-    int success = action_index == 1
-        ?   tile_save(&tile_editor.tile, tile_file_name)
-        :   tile_load(&tile_editor.tile, tile_file_name);
-    if (success) {
-        // TODO: redraw screen
+    if (action_index == 1) {
+        if (!tile_save(&tile_editor.tile, tile_file_name)) {
+            playdate->system->logToConsole("could not save %s", tile_file_name);
+        }
     } else {
-        playdate->system->logToConsole("could not load/save %s", tile_file_name);
+        if (!tile_load(&tile_editor.tile, tile_file_name)) {
+            playdate->system->logToConsole("could not load %s", tile_file_name);
+        }
+        tile_editor_full_redraw();
     }
 }
 
@@ -130,55 +133,53 @@ void tile_editor_update(display_slice_t slice) {
         return;
     }
     if (tile_editor_save_menu.pd_menu == NULL) {
-        display_slice_fill(0, slice);
-        tile_editor.initialization = 16,
-        tile_editor_draw_brush_color();
-        tile_editor_draw_field();
+        tile_editor_full_redraw();
         runtime_add_menu(&tile_editor_save_menu);
         runtime_add_menu(&tile_editor_action_menu);
-    } else if (tile_editor.initialization > 0) {
-        int tile_row = --tile_editor.initialization;
+        return;
+    }
+    if (tile_editor.initialization > 0) {
+        int tile_row = 15 - --tile_editor.initialization;
         for (int x = 0; x < 16; ++x) {
             tile_editor_draw_big_pixel(x, tile_row);
         }
-    } else {
-        if (buttons.pushed & kButtonB) {
-            tile_editor_change_brush_color();
-        }
-        uint8_t previous_x = tile_editor.drawing.cursor_x;
-        uint8_t previous_y = tile_editor.drawing.cursor_y;
-        tile_editor.drawing.cursor_x = (
-                tile_editor.drawing.cursor_x + (
-                        ( (buttons.pushed & kButtonLeft) ? 15 : 0 )
-                    +   ( (buttons.pushed & kButtonRight) ? 1 : 0 )
-                )
-        ) % 16;
-        tile_editor.drawing.cursor_y = (
-                tile_editor.drawing.cursor_y + (
-                        ( (buttons.pushed & kButtonUp) ? 15 : 0 )
-                    +   ( (buttons.pushed & kButtonDown) ? 1 : 0 )
-                )
-        ) % 16;
-        if (
-                tile_editor.drawing.cursor_x != previous_x
-            ||  tile_editor.drawing.cursor_y != previous_y
-        ) {
-            playdate->system->logToConsole(
-                "cursor to (%d, %d)",
-                tile_editor.drawing.cursor_x, tile_editor.drawing.cursor_y
-            );
-            // redraw the previous pixel to remove the cursor:
-            tile_editor_draw_big_pixel(previous_x, previous_y);
-            if (buttons.current & kButtonA) {
-                // this also redraws the pixel:
-                tile_editor_color_pixel(tile_editor.drawing.cursor_x, tile_editor.drawing.cursor_y);
-            } else {
-                // redraw the pixel to show the cursor:
-                tile_editor_draw_big_pixel(tile_editor.drawing.cursor_x, tile_editor.drawing.cursor_y);
-            }
-        } else if (buttons.pushed & kButtonA) {
+    }
+    if (buttons.pushed & kButtonB) {
+        tile_editor_change_brush_color();
+    }
+    uint8_t previous_x = tile_editor.drawing.cursor_x;
+    uint8_t previous_y = tile_editor.drawing.cursor_y;
+    tile_editor.drawing.cursor_x = (
+            tile_editor.drawing.cursor_x + (
+                    ( (buttons.pushed & kButtonLeft) ? 15 : 0 )
+                +   ( (buttons.pushed & kButtonRight) ? 1 : 0 )
+            )
+    ) % 16;
+    tile_editor.drawing.cursor_y = (
+            tile_editor.drawing.cursor_y + (
+                    ( (buttons.pushed & kButtonUp) ? 15 : 0 )
+                +   ( (buttons.pushed & kButtonDown) ? 1 : 0 )
+            )
+    ) % 16;
+    if (
+            tile_editor.drawing.cursor_x != previous_x
+        ||  tile_editor.drawing.cursor_y != previous_y
+    ) {
+        playdate->system->logToConsole(
+            "cursor to (%d, %d)",
+            tile_editor.drawing.cursor_x, tile_editor.drawing.cursor_y
+        );
+        // redraw the previous pixel to remove the cursor:
+        tile_editor_draw_big_pixel(previous_x, previous_y);
+        if (buttons.current & kButtonA) {
+            // this also redraws the pixel:
             tile_editor_color_pixel(tile_editor.drawing.cursor_x, tile_editor.drawing.cursor_y);
+        } else {
+            // redraw the pixel to show the cursor:
+            tile_editor_draw_big_pixel(tile_editor.drawing.cursor_x, tile_editor.drawing.cursor_y);
         }
+    } else if (buttons.pushed & kButtonA) {
+        tile_editor_color_pixel(tile_editor.drawing.cursor_x, tile_editor.drawing.cursor_y);
     }
 }
 
@@ -267,4 +268,11 @@ static void tile_editor_draw_field() {
             .y = 16 + 16 * row,
         });
     }
+}
+
+static void tile_editor_full_redraw() {
+    display_slice_fill(0, $(display_slice){.start_row = 0, .end_row = LCD_ROWS});
+    tile_editor.initialization = 16,
+    tile_editor_draw_brush_color();
+    tile_editor_draw_field();
 }
