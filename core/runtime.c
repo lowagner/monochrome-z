@@ -6,6 +6,7 @@
 static int update(void *unused);
 static void update_mode(int mode, display_slice_t slice);
 static void update_transition_modes(unsigned int transition_counter, int top_mode, int bottom_mode);
+static inline void runtime_menu_reset_value(runtime_menu_t *menu);
 
 struct runtime runtime = {
     .update = update,
@@ -149,6 +150,7 @@ void runtime_menu_callback(void *data) {
         return;
     }
     menu->set_value_from_index(playdate->system->getMenuItemValue(menu->pd_menu));
+    runtime_menu_reset_value(menu);
 }
 
 int runtime_add_menu(runtime_menu_t *menu) {
@@ -163,12 +165,14 @@ int runtime_add_menu(runtime_menu_t *menu) {
         runtime_menu_callback,
         menu
     );
+    runtime_menu_reset_value(menu);
+    return 1;
+}
+
+static inline void runtime_menu_reset_value(runtime_menu_t *menu) {
     int option_index = menu->get_index_from_value();
-    if (option_index < 0) {
-        option_index = 0;
-    } else if (option_index >= menu->option_count) {
-        option_index = menu->option_count - 1;
+    if (option_index < 0 || option_index >= menu->option_count) {
+        return;
     }
     playdate->system->setMenuItemValue(menu->pd_menu, option_index);
-    return 1;
 }

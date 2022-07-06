@@ -103,7 +103,9 @@ void tile_editor_action_set_value(int action_index) {
     int success = action_index == 1
         ?   tile_save(&tile_editor.tile, tile_file_name)
         :   tile_load(&tile_editor.tile, tile_file_name);
-    if (!success) {
+    if (success) {
+        // TODO: redraw screen
+    } else {
         playdate->system->logToConsole("could not load/save %s", tile_file_name);
     }
 }

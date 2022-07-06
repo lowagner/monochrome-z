@@ -24,6 +24,8 @@ int tile_load(tile_t *load_here, const char *file_name) {
             "error closing loaded tile file %s: %s",
             file_name, playdate->file->geterr()
         );
+    } else {
+        playdate->system->logToConsole("successfully loaded tile from %s", file_name);
     }
     return 1;
 }
@@ -41,6 +43,8 @@ int tile_save(const tile_t *from_here, const char *file_name) {
             "error closing saved tile file %s: %s",
             file_name, playdate->file->geterr()
         );
+    } else {
+        playdate->system->logToConsole("successfully saved tile to %s", file_name);
     }
     return 1;
 }
