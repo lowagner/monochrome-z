@@ -105,6 +105,7 @@ void tile_editor_action_set_value(int action_index) {
         if (!tile_save(&tile_editor.tile, tile_file_name)) {
             playdate->system->logToConsole("could not save %s", tile_file_name);
         }
+        // TODO: copy into tiles[tile_editor.tile.index]
     } else {
         if (!tile_load(&tile_editor.tile, tile_file_name)) {
             playdate->system->logToConsole("could not load %s", tile_file_name);
