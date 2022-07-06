@@ -1,9 +1,9 @@
 #include "tile.h"
 
-#include "data.h"
-#include "playdate.h"
+#include "../core/data.h"
+#include "../core/playdate.h"
 #ifndef NDEBUG
-#include "error.h"
+#include "../core/error.h"
 #endif
 
 #include <string.h> // memcpy

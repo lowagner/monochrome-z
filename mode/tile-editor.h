@@ -2,7 +2,7 @@
 #define MODE_TILE_EDITOR
 
 #include "../core/display.h"
-#include "../core/tile.h"
+#include "../library/tile.h"
 
 #include <stdint.h>
 
@@ -23,7 +23,7 @@ typedef struct tile_editor {
 }
     tile_editor_t;
 
-extern struct tile_editor tile_editor;
+extern tile_editor_t tile_editor;
 
 void tile_editor_update(display_slice_t slice);
 
