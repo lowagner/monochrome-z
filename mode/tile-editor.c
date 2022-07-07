@@ -91,8 +91,14 @@ const char *tile_editor_actions[] = {
     "load",
 };
 
-void tile_editor_action_set_value(int action_index) {
-    if (action_index == 0) {
+enum tile_editor_action_t {
+    kTileEditorActionNone = 0,
+    kTileEditorActionSave = 1,
+    kTileEditorActionLoad = 2,
+};
+
+void tile_editor_action_save_or_load(int action) {
+    if (action == kTileEditorActionNone) {
         return;
     }
     const char *tile_name = tile_editor_tiles[tile_editor.tile.index];
@@ -101,20 +107,22 @@ void tile_editor_action_set_value(int action_index) {
         '.', 't', 'i', 'l', 'e',
         0
     };
-    if (action_index == 1) {
+    if (action == kTileEditorActionSave) {
         if (!tile_save(&tile_editor.tile, tile_file_name)) {
             playdate->system->logToConsole("could not save %s", tile_file_name);
         }
-        // TODO: copy into tiles[tile_editor.tile.index]
-    } else {
+        memcpy(tiles + tile_editor.tile.index, &tile_editor.tile, sizeof $(tile));
+    } else if (action == kTileEditorActionLoad) {
         if (!tile_load(&tile_editor.tile, tile_file_name)) {
             playdate->system->logToConsole("could not load %s", tile_file_name);
         }
         tile_editor_full_redraw();
+    } else {
+        playdate->system->logToConsole("weird request to save/load %s", action);
     }
 }
 
-int tile_editor_action_get_index() {
+int tile_editor_action_reset_to_none() {
     // always default to "none" so we don't save/load accidentally.
     return 0;
 }
@@ -124,8 +132,8 @@ runtime_menu_t tile_editor_action_menu = {
     .title = "action",
     .options = tile_editor_actions,
     .option_count = 3,
-    .set_value_from_index = tile_editor_action_set_value,
-    .get_index_from_value = tile_editor_action_get_index,
+    .set_value_from_index = tile_editor_action_save_or_load,
+    .get_index_from_value = tile_editor_action_reset_to_none,
 };
 
 void tile_editor_update(display_slice_t slice) {
@@ -134,7 +142,8 @@ void tile_editor_update(display_slice_t slice) {
         return;
     }
     if (tile_editor_save_menu.pd_menu == NULL) {
-        tile_editor_full_redraw();
+        // loading toggles a full redraw as well:
+        tile_editor_action_save_or_load(kTileEditorActionLoad);
         runtime_add_menu(&tile_editor_save_menu);
         runtime_add_menu(&tile_editor_action_menu);
         return;
