@@ -25,7 +25,9 @@ void room_draw(const room_t *room) {
         for (int j = j_min; j < j_max; ++j)
         for (int i = i_min; i < i_max; ++i) {
             display_tile_draw($(display_tile) {
-                .data1 = tiles[room->tiles[j][i]].data1,
+                .data1 = tiles[room->tile.data[
+                        room->tile.offset + room->tile.row_stride * j + i
+                ]].data1,
                 .x_over_8 = x_over_8_min + 2 * (i - i_min),
                 .y = y_min + 2 *(j - j_min),
             });
