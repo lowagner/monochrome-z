@@ -17,6 +17,9 @@ enum runtime_mode_t {
     #ifdef MODE_TILE_EDITOR
     kRuntimeModeTileEditor,
     #endif
+    #ifdef MODE_MAP_EDITOR
+    kRuntimeModeMapEditor,
+    #endif
 };
 
 typedef struct runtime {

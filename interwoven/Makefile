@@ -1,8 +1,8 @@
 .ONESHELL:
 .PHONY: run
 # TODO: come up with a better way to share libs between CMakeLists.txt and here.
-%: export PD_PROJECT_LIBS=room tile
-%: export PD_PROJECT_MODES=room-editor snake tile-editor
+%: export PD_PROJECT_LIBS=map room tile
+%: export PD_PROJECT_MODES=map-editor snake tile-editor
 %: export PD_PROJECT_NAME=$(shell basename $(shell pwd))
 
 run: Source backup-pdxinfo

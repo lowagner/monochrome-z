@@ -2,12 +2,13 @@ cmake_minimum_required(VERSION 3.14)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../CMakeLists.txt)
 
 set(NEEDED_LIBRARIES
+    map
     room
     tile
 )
 
 set(NEEDED_MODES
-    room-editor
+    map-editor
     snake
     tile-editor
 )

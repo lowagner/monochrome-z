@@ -13,7 +13,7 @@ struct runtime runtime = {
     .transition = {
         .next_mode = kRuntimeModeNone,
         .counter = 0,
-        .speed = 3,
+        .speed = 10,
         .up = 1,
     },
 };
@@ -117,6 +117,11 @@ static void update_mode(int mode, display_slice_t slice) {
         #ifdef MODE_TILE_EDITOR
         case kRuntimeModeTileEditor:
             tile_editor_update(slice);
+            return;
+        #endif
+        #ifdef MODE_MAP_EDITOR
+        case kRuntimeModeMapEditor:
+            map_editor_update(slice);
             return;
         #endif
         default:
