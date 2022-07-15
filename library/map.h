@@ -42,4 +42,4 @@ typedef struct map {
     map_t;
 
 // only used to set room.tile information based on map.room and related fields.
-void map_set_room_tile(const map_t *map, room_t *room);
+void map_set_room_tile(room_t *room, const map_t *map);

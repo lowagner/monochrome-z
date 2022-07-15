@@ -4,6 +4,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../CMakeLists.txt)
 set(NEEDED_LIBRARIES
     map
     room
+    sprite
     tile
 )
 

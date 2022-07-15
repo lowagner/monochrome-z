@@ -18,6 +18,11 @@ map_editor_t map_editor = {
             .y = 0,
         },
     },
+    .room = {
+        .needs_full_redraw = 1,
+        .x_offset_over_16 = 0,
+        .y_offset_over_16 = 0,
+    },
     .initialization = 15,
     .drawing = {
         .tile = 0,
@@ -32,4 +37,7 @@ void map_editor_update(display_slice_t slice) {
         display_slice_fill_alternating(180, 63, slice);
         return;
     }
+    map_set_room_tile(&map_editor.room, &map_editor.map);
+    room_draw(&map_editor.room);
+    map_editor.room.needs_full_redraw = 0;
 }

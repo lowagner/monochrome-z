@@ -8,6 +8,7 @@
 
 typedef struct map_editor {
     map_t map;
+    room_t room;
 
     uint8_t initialization;
 

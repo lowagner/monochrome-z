@@ -50,7 +50,7 @@ int tile_save(const tile_t *from_here, const char *file_name) {
 }
 
 #ifndef NDEBUG
-void test__core__tile() {
+void test__library__tile() {
     tile_t test_saved_tile;
     tile_t test_loaded_tile;
     TEST(

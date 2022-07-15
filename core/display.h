@@ -93,8 +93,8 @@ typedef struct display_sprite {
     uint8_t width; // actual width in pixels (columns), expected to be divisible by 4
     uint8_t height; // actual height in pixels (rows)
 }
-    display_sprite;
+    display_sprite_t;
 
 // draws the sprite to the display. there will be checks in case the sprite is off-screen,
 // so no need to be as careful as with display_tile_draw here for drawing sprites.
-void display_sprite_draw(display_sprite sprite);
+void display_sprite_draw(display_sprite_t sprite);

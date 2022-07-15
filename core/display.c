@@ -300,7 +300,7 @@ void display_tile_draw(display_tile_t tile) {
     playdate->graphics->markUpdatedRows(tile.y, tile.y + 15);
 }
 
-void display_sprite_draw(display_sprite sprite) {
+void display_sprite_draw(display_sprite_t sprite) {
     uint8_t *const display_buffer = display();
     if (sprite.x >= LCD_COLUMNS || sprite.y >= LCD_ROWS) {
         return;
