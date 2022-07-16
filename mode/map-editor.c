@@ -28,7 +28,6 @@ map_editor_t map_editor = {
         .tile = 0,
         .cursor_x = 0,
         .cursor_y = 0,
-        .B_pushed_without_dpad = 0,
     },
 };
 

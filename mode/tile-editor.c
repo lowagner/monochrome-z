@@ -16,7 +16,7 @@ static void tile_editor_full_redraw();
 
 enum tile_editor_color_t {
     kTileEditorColorClear = 0,
-    kTileEditorColorBlack = 1,
+    kTileEditorColorDrawn = 1,
     kTileEditorColorInvert,
     kTileEditorColorCheckerboardOdd,
     kTileEditorColorCheckerboardEven,
@@ -33,7 +33,7 @@ tile_editor_t tile_editor = {
     },
     .initialization = 16,
     .drawing = {
-        .color = kTileEditorColorBlack,
+        .color = kTileEditorColorDrawn,
         .cursor_x = 0,
         .cursor_y = 0,
     },
@@ -136,8 +136,6 @@ runtime_menu_t tile_editor_action_menu = {
     .get_index_from_value = tile_editor_action_reset_to_none,
 };
 
-static int dpad_pushed_while_B_button_active = 0;
-
 void tile_editor_update(display_slice_t slice) {
     if (runtime.transition.counter || runtime.transition.next_mode != kRuntimeModeTileEditor) {
         display_slice_fill(255, slice);
@@ -156,47 +154,34 @@ void tile_editor_update(display_slice_t slice) {
             tile_editor_draw_big_pixel(x, tile_row);
         }
     }
-    if (buttons.pushed & kButtonB) {
-        dpad_pushed_while_B_button_active = 0;
-    }
-    if (buttons.released & kButtonB) {
-        if (!dpad_pushed_while_B_button_active) {
+    buttons_special_update();
+    switch (buttons.special.B) {
+        case kButtonB:
+            // button released without any dpad pushes:
             tile_editor_change_brush_color(tile_editor.drawing.color + 1);
-        }
+            break;
+        case kButtonRight:
+            tile_editor_change_brush_color(kTileEditorColorInvert);
+            break;
+        case kButtonLeft:
+            tile_editor_change_brush_color(
+                    tile_editor.drawing.color == kTileEditorColorCheckerboardOdd
+                ?   kTileEditorColorCheckerboardEven
+                :   kTileEditorColorCheckerboardOdd
+            );
+            break;
+        case kButtonUp:
+            tile_editor_change_brush_color(kTileEditorColorDrawn);
+            break;
+        case kButtonDown:
+            tile_editor_change_brush_color(kTileEditorColorClear);
+            break;
+        default:
+            // could technically push multiple directions in one go,
+            // but we'll ignore these, as well as no special button actions.
     }
     if (buttons.current & kButtonB) {
-        int dpad_pushed = buttons.pushed & (kButtonRight | kButtonUp | kButtonLeft | kButtonDown);
-        if (dpad_pushed) {
-            dpad_pushed_while_B_button_active = 1;
-            switch (dpad_pushed) {
-                case kButtonRight:
-                    tile_editor_change_brush_color(tile_editor.drawing.color + 1);
-                    break;
-                case kButtonLeft:
-                    tile_editor_change_brush_color(
-                            tile_editor.drawing.color
-                        +   kTileEditorColorSentinel - 1
-                    );
-                    break;
-                case kButtonUp:
-                    tile_editor_change_brush_color(
-                            tile_editor.drawing.color == kTileEditorColorClear
-                        ?   kTileEditorColorInvert
-                        :   kTileEditorColorClear
-                    );
-                    break;
-                case kButtonDown:
-                    tile_editor_change_brush_color(
-                            tile_editor.drawing.color == kTileEditorColorBlack
-                        ?   kTileEditorColorInvert
-                        :   kTileEditorColorBlack
-                    );
-                    break;
-                default:
-                    // could technically push multiple directions in one go,
-                    // but we'll ignore these.
-            }
-        }
+        // don't allow coloring or moving around the map when B is pressed.
         return;
     }
     uint8_t previous_x = tile_editor.drawing.cursor_x;

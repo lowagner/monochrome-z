@@ -16,7 +16,6 @@ typedef struct map_editor {
         uint8_t tile;
         uint8_t cursor_x;
         uint8_t cursor_y;
-        uint8_t B_pushed_without_dpad;
     }
         drawing;
 }
