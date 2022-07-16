@@ -9,19 +9,19 @@
 
 static void tile_editor_draw_big_pixel(int x, int y);
 static void tile_editor_color_pixel(int x, int y);
-static void tile_editor_change_brush_color();
+static void tile_editor_change_brush_color(uint8_t color);
 static void tile_editor_draw_brush_color();
 static void tile_editor_draw_field();
 static void tile_editor_full_redraw();
 
 enum tile_editor_color_t {
-    TileEditorColorClear = 0,
-    TileEditorColorBlack = 1,
-    TileEditorColorInvert,
-    TileEditorColorCheckerboardOdd,
-    TileEditorColorCheckerboardEven,
+    kTileEditorColorClear = 0,
+    kTileEditorColorBlack = 1,
+    kTileEditorColorInvert,
+    kTileEditorColorCheckerboardOdd,
+    kTileEditorColorCheckerboardEven,
     // do not actually use
-    TileEditorColorSentinel,
+    kTileEditorColorSentinel,
 };
 
 tile_editor_t tile_editor = {
@@ -33,7 +33,7 @@ tile_editor_t tile_editor = {
     },
     .initialization = 16,
     .drawing = {
-        .color = TileEditorColorBlack,
+        .color = kTileEditorColorBlack,
         .cursor_x = 0,
         .cursor_y = 0,
     },
@@ -92,13 +92,13 @@ const char *tile_editor_actions[] = {
 };
 
 enum tile_editor_action_t {
-    kTileEditorActionNone = 0,
-    kTileEditorActionSave = 1,
-    kTileEditorActionLoad = 2,
+    kkTileEditorActionNone = 0,
+    kkTileEditorActionSave = 1,
+    kkTileEditorActionLoad = 2,
 };
 
 void tile_editor_action_save_or_load(int action) {
-    if (action == kTileEditorActionNone) {
+    if (action == kkTileEditorActionNone) {
         return;
     }
     const char *tile_name = tile_editor_tiles[tile_editor.tile.index];
@@ -107,12 +107,12 @@ void tile_editor_action_save_or_load(int action) {
         '.', 't', 'i', 'l', 'e',
         0
     };
-    if (action == kTileEditorActionSave) {
+    if (action == kkTileEditorActionSave) {
         if (!tile_save(&tile_editor.tile, tile_file_name)) {
             playdate->system->logToConsole("could not save %s", tile_file_name);
         }
         memcpy(tiles + tile_editor.tile.index, &tile_editor.tile, sizeof $(tile));
-    } else if (action == kTileEditorActionLoad) {
+    } else if (action == kkTileEditorActionLoad) {
         if (!tile_load(&tile_editor.tile, tile_file_name)) {
             playdate->system->logToConsole("could not load %s", tile_file_name);
         }
@@ -136,6 +136,8 @@ runtime_menu_t tile_editor_action_menu = {
     .get_index_from_value = tile_editor_action_reset_to_none,
 };
 
+static int dpad_pushed_while_B_button_active = 0;
+
 void tile_editor_update(display_slice_t slice) {
     if (runtime.transition.counter || runtime.transition.next_mode != kRuntimeModeTileEditor) {
         display_slice_fill(255, slice);
@@ -143,7 +145,7 @@ void tile_editor_update(display_slice_t slice) {
     }
     if (tile_editor_save_menu.pd_menu == NULL) {
         // loading toggles a full redraw as well:
-        tile_editor_action_save_or_load(kTileEditorActionLoad);
+        tile_editor_action_save_or_load(kkTileEditorActionLoad);
         runtime_add_menu(&tile_editor_save_menu);
         runtime_add_menu(&tile_editor_action_menu);
         return;
@@ -155,7 +157,47 @@ void tile_editor_update(display_slice_t slice) {
         }
     }
     if (buttons.pushed & kButtonB) {
-        tile_editor_change_brush_color();
+        dpad_pushed_while_B_button_active = 0;
+    }
+    if (buttons.released & kButtonB) {
+        if (!dpad_pushed_while_B_button_active) {
+            tile_editor_change_brush_color(tile_editor.drawing.color + 1);
+        }
+    }
+    if (buttons.current & kButtonB) {
+        int dpad_pushed = buttons.pushed & (kButtonRight | kButtonUp | kButtonLeft | kButtonDown);
+        if (dpad_pushed) {
+            dpad_pushed_while_B_button_active = 1;
+            switch (dpad_pushed) {
+                case kButtonRight:
+                    tile_editor_change_brush_color(tile_editor.drawing.color + 1);
+                    break;
+                case kButtonLeft:
+                    tile_editor_change_brush_color(
+                            tile_editor.drawing.color
+                        +   kTileEditorColorSentinel - 1
+                    );
+                    break;
+                case kButtonUp:
+                    tile_editor_change_brush_color(
+                            tile_editor.drawing.color == kTileEditorColorClear
+                        ?   kTileEditorColorInvert
+                        :   kTileEditorColorClear
+                    );
+                    break;
+                case kButtonDown:
+                    tile_editor_change_brush_color(
+                            tile_editor.drawing.color == kTileEditorColorBlack
+                        ?   kTileEditorColorInvert
+                        :   kTileEditorColorBlack
+                    );
+                    break;
+                default:
+                    // could technically push multiple directions in one go,
+                    // but we'll ignore these.
+            }
+        }
+        return;
     }
     uint8_t previous_x = tile_editor.drawing.cursor_x;
     uint8_t previous_y = tile_editor.drawing.cursor_y;
@@ -221,13 +263,13 @@ static void tile_editor_color_pixel(int x, int y) {
     data_u1s_t u1s;
     data_u1s_initialize(&u1s, y * 16 + x);
     switch (tile_editor.drawing.color) {
-        case TileEditorColorInvert:
+        case kTileEditorColorInvert:
             data_u1s_flip(&u1s, tile_editor.tile.data1);
             break;
-        case TileEditorColorCheckerboardOdd:
+        case kTileEditorColorCheckerboardOdd:
             data_u1s_set(&u1s, tile_editor.tile.data1, (x + y) % 2);
             break;
-        case TileEditorColorCheckerboardEven:
+        case kTileEditorColorCheckerboardEven:
             data_u1s_set(&u1s, tile_editor.tile.data1, 1 - (x + y) % 2);
             break;
         default:
@@ -238,8 +280,8 @@ static void tile_editor_color_pixel(int x, int y) {
     tile_editor_draw_field();
 }
 
-static void tile_editor_change_brush_color() {
-    tile_editor.drawing.color = (tile_editor.drawing.color + 1) % TileEditorColorSentinel;
+static void tile_editor_change_brush_color(uint8_t color) {
+    tile_editor.drawing.color = color % kTileEditorColorSentinel;
     tile_editor_draw_brush_color();
 }
 
@@ -254,13 +296,13 @@ static void tile_editor_draw_brush_color() {
         .end_y = LCD_ROWS - 4,
     };
     switch (tile_editor.drawing.color) {
-        case TileEditorColorInvert:
+        case kTileEditorColorInvert:
             display_box_fill_alternating(85, 170, brush_box);
             break;
-        case TileEditorColorCheckerboardOdd:
+        case kTileEditorColorCheckerboardOdd:
             display_box_fill_multicolor(4, checkerboard_colors + 2, brush_box);
             break;
-        case TileEditorColorCheckerboardEven:
+        case kTileEditorColorCheckerboardEven:
             display_box_fill_multicolor(4, checkerboard_colors + 0, brush_box);
             break;
         default:
