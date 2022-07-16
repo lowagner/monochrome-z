@@ -134,8 +134,10 @@ void display_slice_fill_alternating(uint8_t bg_color0, uint8_t bg_color1, displa
     if (b.start_y >= LCD_ROWS) b.end_y = LCD_ROWS; \
 }
 
-#define U8_BITMASK_LEFT_DISPLAY_BITS(x) (-(1 << (8 - (x))))
-#define U8_BITMASK_RIGHT_DISPLAY_BITS(x) ((1 << (8 - (x))) - 1)
+// here, x is the number of bits you want flipped on:
+#define U8_BITMASK_LEFT_DISPLAY_BITS(x) U8_BITMASK_LEFT_BITS(x)
+// here, x is the related to the number of bits you'll flip on, b, via b = 8 - x:
+#define U8_BITMASK_RIGHT_DISPLAY_BITS(x) U8_BITMASK_RIGHT_BITS(8 - (x))
 
 void display_box_fill(uint8_t color, display_box_t box) {
     display_box_fill_multicolor(1, &color, box);

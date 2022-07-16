@@ -2,6 +2,11 @@
 
 #include <stdint.h>
 
+// here, x is the number of bits you want flipped on, "from the left" (most significant bits):
+#define U8_BITMASK_LEFT_BITS(x) (-(1 << (8 - (x))))
+// here, x is the number of bits you want flipped on, "from the right" (least significant bits):
+#define U8_BITMASK_RIGHT_BITS(x) ((1 << (x)) - 1)
+
 #define DATA3(type1, name1, init1, type2, name2, init2, type3, name3, init3, struct_name) \
     struct struct_name { \
         type1 name1; \
@@ -43,10 +48,14 @@ void data_u1s_increment(data_u1s_t *u1s);
 // sets the data at the current u1s offset to 0 or 1, depending on
 // whether the value is 0 or non-zero.
 void data_u1s_set(const data_u1s_t *u1s, uint8_t *data, int value);
+// sets data bits to 1 for an extended length starting at u1s value.
+// will increment u1s max(0, length_bits) times.
+void data_u1s_fill(data_u1s_t *u1s, uint8_t *data, int length_bits);
 // returns a 0 or a 1, depending on whether the bit is not set or set.
 int data_u1s_get(const data_u1s_t *u1s, const uint8_t *data);
 // flips the bit specified by u1s in data, i.e., from 0 to 1, or from 1 to 0.
-int data_u1s_flip(const data_u1s_t *u1s, uint8_t *data);
+void data_u1s_flip(const data_u1s_t *u1s, uint8_t *data);
+
 
 // TODO: also should probably be in iterator.h/c as iterator_u2s
 typedef struct data_u2s {

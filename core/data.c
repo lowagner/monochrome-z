@@ -48,11 +48,56 @@ void data_u1s_set(const data_u1s_t *u1s, uint8_t *data, int value) {
     }
 }
 
+void data_u1s_fill(data_u1s_t *u1s, uint8_t *data, int length_bits) {
+    if (length_bits <= 0) {
+        return;
+    }
+    // if bit_offset == 7, then we're on a byte boundary (delta = 0)
+    // if bit_offset == 6, then we're 7 bits away from the byte boundary
+    // if bit_offset == 5, then we're 6 bits away from the byte boundary
+    // etc., so delta bits is normally 1 more than bit_offset:
+    int delta_to_byte_boundary = (u1s->bit_offset + 1) & 7;
+    if (delta_to_byte_boundary == 0) {
+        continue_filling_bits_from_full_byte:
+        // u1s->bit_offset == 7, so we're at a byte boundary and can start filling here:
+        int length_bytes = length_bits / 8;
+        length_bits = length_bits % 8;
+        memset(data + u1s->byte_offset, 255, length_bytes);
+        u1s->byte_offset += length_bytes;
+        if (length_bits) {
+            data[u1s->byte_offset] |= U8_BITMASK_LEFT_BITS(length_bits);
+            u1s->bit_offset -= length_bits;
+        }
+    } else if (length_bits >= delta_to_byte_boundary) {
+        data[u1s->byte_offset] |= U8_BITMASK_RIGHT_BITS(delta_to_byte_boundary);
+        ++u1s->byte_offset;
+        u1s->bit_offset = 7;
+        length_bits -= delta_to_byte_boundary;
+        if (length_bits) {
+            goto continue_filling_bits_from_full_byte;
+        }
+    } else {
+        // if bit_offset == 6, we want to start at bit 1 until 1 + length_bits
+        // if bit_offset == 5, we want to start at bit 2 until 2 + length_bits
+        // etc. notice that the starting bit is exactly (7 - bit_offset)
+        // and that delta_to_byte_boundary + length_bits < 7 since
+        // [delta = (bit_offset + 1) % 8] + 
+        // suppose length_bits = 6 and delta_to_byte_boundary = 7
+        int left_bits = (7 - u1s->bit_offset) + length_bits;
+        ASSERT(left_bits <= 8);
+        data[u1s->byte_offset] |= (
+                U8_BITMASK_LEFT_BITS(left_bits)
+            &   U8_BITMASK_RIGHT_BITS(delta_to_byte_boundary)
+        );
+        u1s->bit_offset -= length_bits;
+    }
+}
+
 int data_u1s_get(const data_u1s_t *u1s, const uint8_t *data) {
     return (data[u1s->byte_offset] >> u1s->bit_offset) & 1;
 }
 
-int data_u1s_flip(const data_u1s_t *u1s, uint8_t *data) {
+void data_u1s_flip(const data_u1s_t *u1s, uint8_t *data) {
     data[u1s->byte_offset] ^= 1 << u1s->bit_offset;
 }
 
@@ -156,8 +201,116 @@ void test__core__data() {
             },
             "%s: u1s can flip bits",
             AT
-        ),
-        "%s: u1s", AT
+        );
+
+        TEST_LOGGED(
+            memset(test_data, 0, 256);
+            TEST_LOGGED(
+                data_u1s_initialize(&test_u1s, 5);
+                data_u1s_fill(&test_u1s, test_data, 3);
+                EXPECT_INT_EQUAL(test_data[0], 7);
+                EXPECT_INT_EQUAL(test_data[1], 0);
+                EXPECT_INT_EQUAL(test_u1s.byte_offset, 1);
+                EXPECT_INT_EQUAL(test_u1s.bit_offset, 7);
+            ,   "%s: u1s can fill bits to a boundary",
+                AT
+            );
+
+            TEST_LOGGED(
+                data_u1s_initialize(&test_u1s, 2*8 + 1);
+                data_u1s_fill(&test_u1s, test_data, 4);
+                EXPECT_INT_EQUAL(test_data[1], 0);
+                EXPECT_INT_EQUAL(test_data[2], 64 | 32 | 16 | 8);
+                EXPECT_INT_EQUAL(test_data[3], 0);
+                EXPECT_INT_EQUAL(test_u1s.byte_offset, 2);
+                EXPECT_INT_EQUAL(test_u1s.bit_offset, 2);
+            ,   "%s: u1s can fill bits within a byte",
+                AT
+            );
+
+            TEST_LOGGED(
+                data_u1s_initialize(&test_u1s, 4*8 + 7);
+                // single bit at end of byte boundary:
+                data_u1s_fill(&test_u1s, test_data, 1);
+                EXPECT_INT_EQUAL(test_data[3], 0);
+                EXPECT_INT_EQUAL(test_data[4], 1);
+                EXPECT_INT_EQUAL(test_data[5], 0);
+                EXPECT_INT_EQUAL(test_u1s.byte_offset, 5);
+                EXPECT_INT_EQUAL(test_u1s.bit_offset, 7);
+
+                // single bit at start of (next) byte boundary:
+                data_u1s_fill(&test_u1s, test_data, 1);
+                EXPECT_INT_EQUAL(test_data[5], 128);
+                EXPECT_INT_EQUAL(test_data[6], 0);
+                EXPECT_INT_EQUAL(test_u1s.byte_offset, 5);
+                EXPECT_INT_EQUAL(test_u1s.bit_offset, 6);
+            ,   "%s: u1s can fill single bit within a byte",
+                AT
+            );
+
+            TEST_LOGGED(
+                data_u1s_initialize(&test_u1s, 9*8);
+                data_u1s_fill(&test_u1s, test_data, 24);
+                EXPECT_INT_EQUAL(test_data[8], 0);
+                EXPECT_INT_EQUAL(test_data[9], 255);
+                EXPECT_INT_EQUAL(test_data[10], 255);
+                EXPECT_INT_EQUAL(test_data[11], 255);
+                EXPECT_INT_EQUAL(test_data[12], 0);
+                EXPECT_INT_EQUAL(test_u1s.byte_offset, 12);
+                EXPECT_INT_EQUAL(test_u1s.bit_offset, 7);
+            ,   "%s: u1s can fill bytes worth of data, starting on byte boundary",
+                AT
+            );
+
+            TEST_LOGGED(
+                data_u1s_initialize(&test_u1s, 13*8);
+                data_u1s_fill(&test_u1s, test_data, 2*8 + 2);
+                EXPECT_INT_EQUAL(test_data[12], 0);
+                EXPECT_INT_EQUAL(test_data[13], 255);
+                EXPECT_INT_EQUAL(test_data[14], 255);
+                EXPECT_INT_EQUAL(test_data[15], 128 | 64);
+                EXPECT_INT_EQUAL(test_data[16], 0);
+                EXPECT_INT_EQUAL(test_u1s.byte_offset, 15);
+                EXPECT_INT_EQUAL(test_u1s.bit_offset, 5);
+            ,   "%s: u1s can fill bytes worth of data + bits, starting on byte boundary",
+                AT
+            );
+
+            TEST_LOGGED(
+                data_u1s_initialize(&test_u1s, 17*8 + 3);
+                data_u1s_fill(&test_u1s, test_data, 5*8 + 5 + 6);
+                EXPECT_INT_EQUAL(test_data[16], 0);
+                EXPECT_INT_EQUAL(test_data[17], 1 | 2 | 4 | 8 | 16); // 5 bits flipped here
+                EXPECT_INT_EQUAL(test_data[18], 255);
+                EXPECT_INT_EQUAL(test_data[19], 255);
+                EXPECT_INT_EQUAL(test_data[20], 255);
+                EXPECT_INT_EQUAL(test_data[21], 255);
+                EXPECT_INT_EQUAL(test_data[22], 255);
+                EXPECT_INT_EQUAL(test_data[23], 128 | 64 | 32 | 16 | 8 | 4); // 6 bits flipped
+                EXPECT_INT_EQUAL(test_data[24], 0);
+                EXPECT_INT_EQUAL(test_u1s.byte_offset, 23);
+                EXPECT_INT_EQUAL(test_u1s.bit_offset, 1);
+            ,   "%s: u1s can fill bytes worth of data + bits, crossing byte boundaries",
+                AT
+            );
+
+            TEST_LOGGED(
+                data_u1s_initialize(&test_u1s, 25*8 + 4);
+                data_u1s_fill(&test_u1s, test_data, 2*8 + 4);
+                EXPECT_INT_EQUAL(test_data[24], 0);
+                EXPECT_INT_EQUAL(test_data[25], 1 | 2 | 4 | 8);
+                EXPECT_INT_EQUAL(test_data[26], 255);
+                EXPECT_INT_EQUAL(test_data[27], 255);
+                EXPECT_INT_EQUAL(test_data[28], 0);
+                EXPECT_INT_EQUAL(test_u1s.byte_offset, 28);
+                EXPECT_INT_EQUAL(test_u1s.bit_offset, 7);
+            ,   "%s: u1s can fill bytes worth of data + bits, ending on byte boundary",
+                AT
+            );
+        ,   "%s: u1s can fill bits",
+            AT
+        );
+    ,   "%s: u1s", AT
     );
 
     TEST_LOGGED(
