@@ -1,5 +1,6 @@
 #include "sprite.h"
 
+#include "../core/data.h"
 #include "../core/error.h"
 
 #include <stdlib.h> // qsort
@@ -11,6 +12,7 @@ static sprite_t sprites[MAX_SPRITE_COUNT];
 static uint8_t ordered_sprites[MAX_SPRITE_COUNT];
 // the "head" of this list is the last element (sprite_free_list[MAX_SPRITE_COUNT])
 static uint8_t sprite_free_list[MAX_SPRITE_COUNT + 1];
+static uint8_t sprite_redraw_tiles[(LCD_ROWS / 16) * (LCD_COLUMNS / 16) / 8 + 1]; 
 
 void sprite_reset() {
     internal_sprite_count = 0;
@@ -59,6 +61,76 @@ void sprite_remove(sprite_t *sprite) {
         --ordered_check_index;
         last_ordered_sprite_index = next_ordered_sprite_index;
     }
+}
+
+static inline int sprite_tile_clamp(
+    int *min_over_16,   // start with this bit
+    int *max_over_16,   // go up to, but not including this bit
+    int start,
+    int length,
+    int absolute_max_over_16
+) {
+    // need the floor of start / 16:
+    *min_over_16 = start / 16;
+    if (*min_over_16 >= absolute_max_over_16) {
+        return 0;
+    }
+    // need the ceiling of (start + length) / 16:
+    *max_over_16 = (start + length + 15) / 16;
+    if (*max_over_16 <= 0) {
+        return 0;
+    }
+    if (*min_over_16 < 0) {
+        *min_over_16 = 0;
+    }
+    if (*max_over_16 > absolute_max_over_16) {
+        *max_over_16 = absolute_max_over_16;
+    }
+    return 1;
+}
+
+static inline void sprite_tile_check(const display_sprite_t *display_sprite) {
+    int min_x_over_16, max_x_over_16;
+    if (!sprite_tile_clamp(
+        &min_x_over_16,
+        &max_x_over_16,
+        display_sprite->x,
+        display_sprite->width,
+        LCD_COLUMNS / 16
+    )) {
+        return;
+    }
+    int min_y_over_16, max_y_over_16;
+    if (!sprite_tile_clamp(
+        &min_y_over_16,
+        &max_y_over_16,
+        display_sprite->y,
+        display_sprite->height,
+        LCD_ROWS / 16
+    )) {
+        return;
+    }
+    for (int y_over_16 = min_y_over_16; y_over_16 < max_y_over_16; ++y_over_16) {
+        data_u1s_t u1s;
+        data_u1s_initialize(&u1s, y_over_16 * (LCD_COLUMNS / 16) + min_x_over_16);
+        data_u1s_fill(&u1s, sprite_redraw_tiles, max_x_over_16 - min_x_over_16);
+    }
+}
+
+static inline void sprite_tile_check_all() {
+    for (int i = 0; i < internal_sprite_count; ++i) {
+        sprite_tile_check(&sprites[ordered_sprites[i]].display);
+    }
+}
+
+void sprite_pre_move_tile_check() {
+    memset(sprite_redraw_tiles, 0, sizeof(sprite_redraw_tiles));    
+    sprite_tile_check_all();
+}
+
+const uint8_t *sprite_post_move_tile_check() {
+    sprite_tile_check_all();
+    return sprite_redraw_tiles;
 }
 
 static inline void sprite_sort() {
@@ -116,6 +188,7 @@ static void test_setup_sprites_40213() {
     EXPECT_INT_EQUAL(ordered_sprites[3], 1);
     EXPECT_INT_EQUAL(ordered_sprites[4], 3);
 }
+
 void test__library__sprite() {
     TEST(
         sprite_reset();
