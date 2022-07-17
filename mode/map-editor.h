@@ -3,6 +3,7 @@
 
 #include "../core/display.h"
 #include "../library/map.h"
+#include "../library/sprite.h"
 
 #include <stdint.h>
 
@@ -14,8 +15,13 @@ typedef struct map_editor {
 
     struct {
         uint8_t tile;
-        uint8_t cursor_x;
-        uint8_t cursor_y;
+        struct {
+            uint8_t x;
+            uint8_t y;
+            uint8_t data2[4 * 4 / 4];    // 4x4 with 2-bits per pixel
+            sprite_t *sprite;
+        }
+            cursor;
     }
         drawing;
 }

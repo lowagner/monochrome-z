@@ -18,13 +18,14 @@ typedef struct room {
         int offset;
     }
         tile;
-    uint8_t needs_full_redraw;
     // TODO: maybe someday allow x_offset_over_8, but don't want to think about it now.
     int x_offset_over_16;
     // TODO: maybe someday allow any y_offset, don't want to think about it now.
     int y_offset_over_16;
-    // TODO: add sprites
 }
     room_t;
 
+// redraw_areas are 16x16 patches of the screen that *do not necessarily* line up
+// with the actual room tiles (based on room->x_offset_over_16 and y_offset_over_16).
+void room_draw_partial(const room_t *room, const uint8_t *redraw_areas);
 void room_draw(const room_t *room);

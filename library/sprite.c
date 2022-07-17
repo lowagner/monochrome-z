@@ -12,7 +12,7 @@ static sprite_t sprites[MAX_SPRITE_COUNT];
 static uint8_t ordered_sprites[MAX_SPRITE_COUNT];
 // the "head" of this list is the last element (sprite_free_list[MAX_SPRITE_COUNT])
 static uint8_t sprite_free_list[MAX_SPRITE_COUNT + 1];
-static uint8_t sprite_redraw_tiles[(LCD_ROWS / 16) * (LCD_COLUMNS / 16) / 8 + 1]; 
+static uint8_t sprite_redraw_areas[(LCD_ROWS / 16) * (LCD_COLUMNS / 16) / 8 + 1]; 
 
 void sprite_reset() {
     internal_sprite_count = 0;
@@ -63,7 +63,7 @@ void sprite_remove(sprite_t *sprite) {
     }
 }
 
-static inline int sprite_tile_clamp(
+static inline int sprite_area_clamp(
     int *min_over_16,   // start with this bit
     int *max_over_16,   // go up to, but not including this bit
     int start,
@@ -89,9 +89,9 @@ static inline int sprite_tile_clamp(
     return 1;
 }
 
-static inline void sprite_tile_check(const display_sprite_t *display_sprite) {
+static inline void sprite_area_check(const display_sprite_t *display_sprite) {
     int min_x_over_16, max_x_over_16;
-    if (!sprite_tile_clamp(
+    if (!sprite_area_clamp(
         &min_x_over_16,
         &max_x_over_16,
         display_sprite->x,
@@ -101,7 +101,7 @@ static inline void sprite_tile_check(const display_sprite_t *display_sprite) {
         return;
     }
     int min_y_over_16, max_y_over_16;
-    if (!sprite_tile_clamp(
+    if (!sprite_area_clamp(
         &min_y_over_16,
         &max_y_over_16,
         display_sprite->y,
@@ -113,24 +113,24 @@ static inline void sprite_tile_check(const display_sprite_t *display_sprite) {
     for (int y_over_16 = min_y_over_16; y_over_16 < max_y_over_16; ++y_over_16) {
         data_u1s_t u1s;
         data_u1s_initialize(&u1s, y_over_16 * (LCD_COLUMNS / 16) + min_x_over_16);
-        data_u1s_fill(&u1s, sprite_redraw_tiles, max_x_over_16 - min_x_over_16);
+        data_u1s_fill(&u1s, sprite_redraw_areas, max_x_over_16 - min_x_over_16);
     }
 }
 
-static inline void sprite_tile_check_all() {
+static inline void sprite_area_check_all() {
     for (int i = 0; i < internal_sprite_count; ++i) {
-        sprite_tile_check(&sprites[ordered_sprites[i]].display);
+        sprite_area_check(&sprites[ordered_sprites[i]].display);
     }
 }
 
-void sprite_pre_move_tile_check() {
-    memset(sprite_redraw_tiles, 0, sizeof(sprite_redraw_tiles));    
-    sprite_tile_check_all();
+void sprite_pre_move_area_check() {
+    memset(sprite_redraw_areas, 0, sizeof(sprite_redraw_areas));    
+    sprite_area_check_all();
 }
 
-const uint8_t *sprite_post_move_tile_check() {
-    sprite_tile_check_all();
-    return sprite_redraw_tiles;
+const uint8_t *sprite_post_move_area_check() {
+    sprite_area_check_all();
+    return sprite_redraw_areas;
 }
 
 static inline void sprite_sort() {

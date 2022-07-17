@@ -32,7 +32,7 @@ void data_u1s_initialize(data_u1s_t *u1s, uint32_t offset) {
     u1s->bit_offset = 7 - offset % 8; // we iterate over most-significant-bits first for playdate
 }
 
-void data_u1s_increment(data_u1s_t *u1s) {
+inline void data_u1s_increment(data_u1s_t *u1s) {
     if (--u1s->bit_offset > 7) {
         // bit_offset went from 0 to 255
         u1s->bit_offset = 7;
@@ -40,12 +40,17 @@ void data_u1s_increment(data_u1s_t *u1s) {
     }
 }
 
-void data_u1s_set(const data_u1s_t *u1s, uint8_t *data, int value) {
+inline void data_u1s_set(const data_u1s_t *u1s, uint8_t *data, int value) {
     if (value) {
         data[u1s->byte_offset] |= 1 << u1s->bit_offset;
     } else {
         data[u1s->byte_offset] &= ~(1 << u1s->bit_offset);
     }
+}
+
+void data_u1s_set_and_increment(data_u1s_t *u1s, uint8_t *data, int value) {
+    data_u1s_set(u1s, data, value);
+    data_u1s_increment(u1s);
 }
 
 void data_u1s_fill(data_u1s_t *u1s, uint8_t *data, int length_bits) {
@@ -93,12 +98,23 @@ void data_u1s_fill(data_u1s_t *u1s, uint8_t *data, int length_bits) {
     }
 }
 
-int data_u1s_get(const data_u1s_t *u1s, const uint8_t *data) {
+inline int data_u1s_get(const data_u1s_t *u1s, const uint8_t *data) {
     return (data[u1s->byte_offset] >> u1s->bit_offset) & 1;
 }
 
-void data_u1s_flip(const data_u1s_t *u1s, uint8_t *data) {
+int data_u1s_get_and_increment(data_u1s_t *u1s, const uint8_t *data) {
+    int result = data_u1s_get(u1s, data);
+    data_u1s_increment(u1s);
+    return result;
+}
+
+inline void data_u1s_flip(const data_u1s_t *u1s, uint8_t *data) {
     data[u1s->byte_offset] ^= 1 << u1s->bit_offset;
+}
+
+void data_u1s_flip_and_increment(data_u1s_t *u1s, uint8_t *data) {
+    data_u1s_flip(u1s, data);
+    data_u1s_increment(u1s);
 }
 
 void data_u2s_initialize(data_u2s_t *u2s, uint32_t offset) {
@@ -106,7 +122,7 @@ void data_u2s_initialize(data_u2s_t *u2s, uint32_t offset) {
     u2s->bit_offset = 6 - 2 * (offset % 4); // we iterate over most-significant-bits first
 }
 
-void data_u2s_increment(data_u2s_t *u2s) {
+inline void data_u2s_increment(data_u2s_t *u2s) {
     u2s->bit_offset -= 2;
     if (u2s->bit_offset > 6) {
         // bit_offset went from 0 to 254
@@ -115,15 +131,26 @@ void data_u2s_increment(data_u2s_t *u2s) {
     }
 }
 
-void data_u2s_set(const data_u2s_t *u2s, uint8_t *data, int value) {
+inline void data_u2s_set(const data_u2s_t *u2s, uint8_t *data, int value) {
     data[u2s->byte_offset] = (
             ( data[u2s->byte_offset] & ~(3 << u2s->bit_offset) )
         |   ( (value & 3) << u2s->bit_offset )
     );
 }
 
-int data_u2s_get(const data_u2s_t *u2s, const uint8_t *data) {
+void data_u2s_set_and_increment(data_u2s_t *u2s, uint8_t *data, int value) {
+    data_u2s_set(u2s, data, value);
+    data_u2s_increment(u2s);
+}
+
+inline int data_u2s_get(const data_u2s_t *u2s, const uint8_t *data) {
     return (data[u2s->byte_offset] >> u2s->bit_offset) & 3;
+}
+
+int data_u2s_get_and_increment(data_u2s_t *u2s, const uint8_t *data) {
+    int result = data_u2s_get(u2s, data);
+    data_u2s_increment(u2s);
+    return result;
 }
 
 #ifndef NDEBUG
@@ -152,8 +179,7 @@ void test__core__data() {
         TEST(
             data_u1s_initialize(&test_u1s, 0);
             for (int i = 0; i < 256 * 8; ++i) {
-                data_u1s_set(&test_u1s, test_data, 0);
-                data_u1s_increment(&test_u1s);
+                data_u1s_set_and_increment(&test_u1s, test_data, 0);
             }
             for (int i = 0; i < 256; ++i) {
                 TEST(
@@ -169,8 +195,7 @@ void test__core__data() {
         TEST(
             data_u1s_initialize(&test_u1s, 0);
             for (int i = 0; i < 256 * 8; ++i) {
-                data_u1s_set(&test_u1s, test_data, 1);
-                data_u1s_increment(&test_u1s);
+                data_u1s_set_and_increment(&test_u1s, test_data, 1);
             }
             for (int i = 0; i < 256; ++i) {
                 TEST(
@@ -333,14 +358,10 @@ void test__core__data() {
         TEST_LOGGED(
             data_u2s_initialize(&test_u2s, 0);
             for (int i = 0; i < 256; ++i) {
-                data_u2s_set(&test_u2s, test_data, 2);
-                data_u2s_increment(&test_u2s);
-                data_u2s_set(&test_u2s, test_data, 1);
-                data_u2s_increment(&test_u2s);
-                data_u2s_set(&test_u2s, test_data, 3);
-                data_u2s_increment(&test_u2s);
-                data_u2s_set(&test_u2s, test_data, 0);
-                data_u2s_increment(&test_u2s);
+                data_u2s_set_and_increment(&test_u2s, test_data, 2);
+                data_u2s_set_and_increment(&test_u2s, test_data, 1);
+                data_u2s_set_and_increment(&test_u2s, test_data, 3);
+                data_u2s_set_and_increment(&test_u2s, test_data, 0);
             }
             for (int i = 0; i < 256; ++i) {
                 TEST_LOGGED(

@@ -330,24 +330,23 @@ void display_sprite_draw(display_sprite_t sprite) {
             +   (start_pixel_x - sprite.x)
         );
         for (int16_t pixel_x = start_pixel_x; pixel_x < end_pixel_x; ++pixel_x) {
-            int u2 = data_u2s_get(&sprite_iterator, sprite.data2);
-            data_u2s_increment(&sprite_iterator);
+            int u2 = data_u2s_get_and_increment(&sprite_iterator, sprite.data2);
 
             switch (u2) {
-                case 0:
-                    data_u1s_set(&display_iterator, display_buffer, PIXEL_OFF);
+                case kDisplaySpritePixelOff:
+                    data_u1s_set_and_increment(&display_iterator, display_buffer, PIXEL_OFF);
                     break;
-                case 1:
-                    data_u1s_set(&display_iterator, display_buffer, PIXEL_ON);
+                case kDisplaySpritePixelOn:
+                    data_u1s_set_and_increment(&display_iterator, display_buffer, PIXEL_ON);
                     break;
-                case 3:
-                    data_u1s_flip(&display_iterator, display_buffer);
+                case kDisplaySpritePixelFlip:
+                    data_u1s_flip_and_increment(&display_iterator, display_buffer);
                     break;
                 default:
                     // skip doing anything to display, including case 2.
+                    data_u1s_increment(&display_iterator);
                     break;
             }
-            data_u1s_increment(&display_iterator);
         }
     }
     playdate->graphics->markUpdatedRows(start_pixel_y, end_pixel_y - 1);

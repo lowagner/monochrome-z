@@ -69,6 +69,14 @@ typedef struct display_tile {
 //   and y should be between 0 and 224 = 240 - 16, inclusive.
 void display_tile_draw(display_tile_t tile);
 
+enum display_sprite_pixel_t {
+    kDisplaySpritePixelOff = 0,
+    kDisplaySpritePixelOn = 1,
+    kDisplaySpritePixelSkip = 2,
+    kDisplaySpritePixelFlip = 3,
+    // No more allowed, 2 bits per pixel in sprites.
+};
+
 // a sprite of variable size, with transparency options.
 // meant to fit into 96 bits = 12 bytes (on 32 bit architecture).
 typedef struct display_sprite {
