@@ -7,6 +7,9 @@
 // should be less than 256.  smaller is better, at least if you need to sort.
 #define MAX_SPRITE_COUNT 64
 
+#define SPRITE_Z_BACK INT16_MAX
+#define SPRITE_Z_FRONT INT16_MIN
+
 typedef struct sprite {
     int16_t x;
     int16_t y;
@@ -21,13 +24,15 @@ typedef struct sprite {
     uint8_t stamina;
     uint8_t state;
 
+    // large positive numbers for display.z are further away and will be drawn *first*.
+    // negative numbers for display.z are closer and will be drawn *last*.
     display_sprite_t display;
 }
     sprite_t;
 
 void sprite_reset();
 int sprite_count();
-sprite_t *sprite_add();
+sprite_t *sprite_add(display_sprite_t display_data);
 void sprite_remove(sprite_t *sprite);
 // calculates where sprites currently are in order to calculate areas that they might leave
 // (and those areas will need to be redrawn).

@@ -98,6 +98,9 @@ typedef struct display_sprite {
     int16_t y;
 
     int16_t z; // for ordering front to back.  you can use this for whatever, display doesn't use it.
+               // ../library/sprite.c uses this number to determine which sprites to draw first.
+               // large positive numbers are further away and will be drawn *first*.
+               // negative numbers are closer and will be drawn *last*.
     uint8_t width; // actual width in pixels (columns), expected to be divisible by 4
     uint8_t height; // actual height in pixels (rows)
 }

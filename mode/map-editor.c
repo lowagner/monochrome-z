@@ -5,6 +5,8 @@
 #include "../library/room.h"
 #include "../library/sprite.h"
 
+static void map_editor_initialize_next();
+
 map_editor_t map_editor = {
     .map = {
         .global_offset = {
@@ -39,67 +41,112 @@ map_editor_t map_editor = {
 enum map_editor_init_t {
     kMapEditorInitNone = 0,
     kMapEditorInitAddCursorSprite,
+    kMapEditorInitResetSprites,
     kMapEditorInitDrawRoom,
     kMapEditorInitLoadRoom,
+    // don't use this for anything:
+    kMapEditorInitSentinel,
 };
 
 void map_editor_update(display_slice_t slice) {
     if (runtime.transition.counter || runtime.transition.next_mode != kRuntimeModeMapEditor) {
         display_slice_fill_alternating(180, 63, slice);
-        map_editor.initialization = kMapEditorInitLoadRoom;
+        map_editor.initialization = kMapEditorInitSentinel - 1;
         return;
     }
     if (map_editor.initialization) {
-        switch (map_editor.initialization) {
-            case kMapEditorInitLoadRoom:
-                // TODO
-                break;
-            case kMapEditorInitDrawRoom:
-                map_set_room_tile(&map_editor.room, &map_editor.map);
-                room_draw(&map_editor.room);
-                break;
-            case kMapEditorInitAddCursorSprite: {
-                data_u2s_t u2s;
-                data_u2s_initialize(&u2s, 0);
-                for (int row = 0; row < 4; ++row) {
-                    if (row == 0 || row == 3) {
-                        // skip, on, on, skip
-                        data_u2s_set_and_increment(
-                            &u2s, map_editor.drawing.cursor.data2, kDisplaySpritePixelSkip
-                        );
-                        data_u2s_set_and_increment(
-                            &u2s, map_editor.drawing.cursor.data2, kDisplaySpritePixelOn
-                        );
-                        data_u2s_set_and_increment(
-                            &u2s, map_editor.drawing.cursor.data2, kDisplaySpritePixelOn
-                        );
-                        data_u2s_set_and_increment(
-                            &u2s, map_editor.drawing.cursor.data2, kDisplaySpritePixelSkip
-                        );
-                    } else {
-                        // rows 1 and 2: on, on, on, on
-                        data_u2s_set_and_increment(
-                            &u2s, map_editor.drawing.cursor.data2, kDisplaySpritePixelOn
-                        );
-                        data_u2s_set_and_increment(
-                            &u2s, map_editor.drawing.cursor.data2, kDisplaySpritePixelOn
-                        );
-                        data_u2s_set_and_increment(
-                            &u2s, map_editor.drawing.cursor.data2, kDisplaySpritePixelOn
-                        );
-                        data_u2s_set_and_increment(
-                            &u2s, map_editor.drawing.cursor.data2, kDisplaySpritePixelOn
-                        );
-                    }
-                }
-                break;
-            }
-        }
+        map_editor_initialize_next();
         --map_editor.initialization;
     } else {
         sprite_pre_move_area_check();
+        int x_axis, y_axis;
+        buttons_axis_pushed(&x_axis, &y_axis);
+        map_editor.drawing.cursor.x += x_axis;
+        if (map_editor.drawing.cursor.x < 0) {
+            // TODO: switch rooms
+            map_editor.drawing.cursor.x = 0;
+        } else if (map_editor.drawing.cursor.x >= ROOM_WIDTH_IN_TILES) {
+            // TODO: switch rooms
+            map_editor.drawing.cursor.x = ROOM_WIDTH_IN_TILES - 1;
+        }
+        map_editor.drawing.cursor.y += y_axis;
+        if (map_editor.drawing.cursor.y < 0) {
+            // TODO: switch rooms
+            map_editor.drawing.cursor.y = 0;
+        } else if (map_editor.drawing.cursor.y >= ROOM_HEIGHT_IN_TILES) {
+            // TODO: switch rooms
+            map_editor.drawing.cursor.y = ROOM_HEIGHT_IN_TILES - 1;
+        }
+        if (x_axis || y_axis) {
+            playdate->system->logToConsole(
+                "map cursor position (%d, %d)",
+                map_editor.drawing.cursor.x,
+                map_editor.drawing.cursor.y
+            );
+        }
+        map_editor.drawing.cursor.sprite->display.x = 6 + 16 * map_editor.drawing.cursor.x;
+        map_editor.drawing.cursor.sprite->display.y = 6 + 16 * map_editor.drawing.cursor.y;
         const uint8_t *redraw_areas = sprite_post_move_area_check();
         room_draw_partial(&map_editor.room, redraw_areas);
         sprite_draw();
+    }
+}
+
+static void map_editor_initialize_next() {
+    switch (map_editor.initialization) {
+        case kMapEditorInitLoadRoom:
+            // TODO
+            break;
+        case kMapEditorInitDrawRoom:
+            map_set_room_tile(&map_editor.room, &map_editor.map);
+            room_draw(&map_editor.room);
+            break;
+        case kMapEditorInitResetSprites:
+            sprite_reset();
+            break;
+        case kMapEditorInitAddCursorSprite: {
+            data_u2s_t u2s;
+            data_u2s_initialize(&u2s, 0);
+            for (int row = 0; row < 4; ++row) {
+                if (row == 0 || row == 3) {
+                    // skip, flip, flip, skip
+                    data_u2s_set_and_increment(
+                        &u2s, map_editor.drawing.cursor.data2, kDisplaySpritePixelSkip
+                    );
+                    data_u2s_set_and_increment(
+                        &u2s, map_editor.drawing.cursor.data2, kDisplaySpritePixelFlip
+                    );
+                    data_u2s_set_and_increment(
+                        &u2s, map_editor.drawing.cursor.data2, kDisplaySpritePixelFlip
+                    );
+                    data_u2s_set_and_increment(
+                        &u2s, map_editor.drawing.cursor.data2, kDisplaySpritePixelSkip
+                    );
+                } else {
+                    // rows 1 and 2: flip, flip, flip, flip
+                    data_u2s_set_and_increment(
+                        &u2s, map_editor.drawing.cursor.data2, kDisplaySpritePixelFlip
+                    );
+                    data_u2s_set_and_increment(
+                        &u2s, map_editor.drawing.cursor.data2, kDisplaySpritePixelFlip
+                    );
+                    data_u2s_set_and_increment(
+                        &u2s, map_editor.drawing.cursor.data2, kDisplaySpritePixelFlip
+                    );
+                    data_u2s_set_and_increment(
+                        &u2s, map_editor.drawing.cursor.data2, kDisplaySpritePixelFlip
+                    );
+                }
+            }
+            map_editor.drawing.cursor.sprite = sprite_add($(display_sprite){
+                .x = 6,
+                .y = 6,
+                .z = SPRITE_Z_FRONT,
+                .data2 = map_editor.drawing.cursor.data2,
+                .width = 4,
+                .height = 4,
+            });
+            break;
+        }
     }
 }

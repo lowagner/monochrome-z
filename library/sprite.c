@@ -27,7 +27,8 @@ int sprite_count() {
     return internal_sprite_count;
 }
 
-sprite_t *sprite_add() {
+sprite_t *sprite_add(display_sprite_t display_data) {
+    ASSERT(display_data.data2 != NULL);
     ASSERT(internal_sprite_count < MAX_SPRITE_COUNT);
     int to_be_used_index = sprite_free_list[MAX_SPRITE_COUNT];
     ASSERT(to_be_used_index < MAX_SPRITE_COUNT);
@@ -36,7 +37,9 @@ sprite_t *sprite_add() {
     // will actually need to order this sprite, but that's done in the "draw" method:
     ordered_sprites[internal_sprite_count++] = to_be_used_index;
     playdate->system->logToConsole("adding sprite %d", to_be_used_index);
-    return sprites + to_be_used_index;
+    sprite_t *result = sprites + to_be_used_index;
+    memcpy(&result->display, &display_data, sizeof $(display_sprite));
+    return result;
 }
 
 void sprite_remove(sprite_t *sprite) {
@@ -160,22 +163,26 @@ static int sprite_compare(const void *void_index1, const void *void_index2) {
 }
 
 #ifndef NDEBUG
+static uint8_t test_sprite_data2[64] = {0};
+static display_sprite_t test_display_sprite = {
+    .data2 = test_sprite_data2,
+};
 static void test_setup_sprites_40213() {
     sprite_reset();
     sprite_t *sprite;
-    sprite = sprite_add();
+    sprite = sprite_add(test_display_sprite);
     EXPECT_INT_EQUAL((int)(sprite - sprites), 0);
     sprite->display.z = 100;
-    sprite = sprite_add();
+    sprite = sprite_add(test_display_sprite);
     EXPECT_INT_EQUAL((int)(sprite - sprites), 1);
     sprite->display.z = -1;
-    sprite = sprite_add();
+    sprite = sprite_add(test_display_sprite);
     EXPECT_INT_EQUAL((int)(sprite - sprites), 2);
     sprite->display.z = 30;
-    sprite = sprite_add();
+    sprite = sprite_add(test_display_sprite);
     EXPECT_INT_EQUAL((int)(sprite - sprites), 3);
     sprite->display.z = -3;
-    sprite = sprite_add();
+    sprite = sprite_add(test_display_sprite);
     EXPECT_INT_EQUAL((int)(sprite - sprites), 4);
     sprite->display.z = 120;
 
@@ -193,13 +200,13 @@ void test__library__sprite() {
     TEST(
         sprite_reset();
         sprite_t *sprite;
-        sprite = sprite_add();
+        sprite = sprite_add(test_display_sprite);
         EXPECT_INT_EQUAL((int)(sprite - sprites), 0);
         sprite->display.z = 100;
-        sprite = sprite_add();
+        sprite = sprite_add(test_display_sprite);
         EXPECT_INT_EQUAL((int)(sprite - sprites), 1);
         sprite->display.z = -1;
-        sprite = sprite_add();
+        sprite = sprite_add(test_display_sprite);
         EXPECT_INT_EQUAL((int)(sprite - sprites), 2);
         sprite->display.z = 30;
         EXPECT_INT_EQUAL(sprite_count(), 3);
@@ -211,7 +218,7 @@ void test__library__sprite() {
         EXPECT_INT_EQUAL(ordered_sprites[1], 2);
         EXPECT_INT_EQUAL(ordered_sprites[2], 1);
 
-        sprite = sprite_add();
+        sprite = sprite_add(test_display_sprite);
         EXPECT_INT_EQUAL((int)(sprite - sprites), 3);
         sprite->display.z = 200;
         EXPECT_INT_EQUAL(sprite_count(), 4);

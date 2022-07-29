@@ -16,8 +16,8 @@ typedef struct map_editor {
     struct {
         uint8_t tile;
         struct {
-            uint8_t x;
-            uint8_t y;
+            int8_t x;
+            int8_t y;
             uint8_t data2[4 * 4 / 4];    // 4x4 with 2-bits per pixel
             sprite_t *sprite;
         }

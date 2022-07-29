@@ -22,7 +22,7 @@ void initialize() {
     test__mode__snake();
     #endif
     font_load("/System/Fonts/Asheville-Sans-14-Bold.pft");
-    runtime.transition.next_mode = kRuntimeModeTileEditor;
+    runtime.transition.next_mode = kRuntimeModeMapEditor;
 }
 
 void default_update(display_slice_t slice) {

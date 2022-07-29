@@ -7,6 +7,7 @@
 
 #ifndef NDEBUG
 #include "error.h"
+#include "buttons.h" // TODO: REMOVE
 uint8_t test_display_buffer[ROW_STRIDE * LCD_ROWS];
 #endif
 
@@ -303,33 +304,40 @@ void display_tile_draw(display_tile_t tile) {
 }
 
 void display_sprite_draw(display_sprite_t sprite) {
+    ASSERT(sprite.data2 != NULL);
     uint8_t *const display_buffer = display();
     if (sprite.x >= LCD_COLUMNS || sprite.y >= LCD_ROWS) {
         return;
     }
     int16_t start_pixel_x = sprite.x > 0 ? sprite.x : 0;
     int16_t end_pixel_x = sprite.x + sprite.width;
-    if (end_pixel_x < 0) {
+    if (end_pixel_x <= 0) {
         return;
     } else if (end_pixel_x >= LCD_COLUMNS) {
         end_pixel_x = LCD_COLUMNS;
     }
     int16_t start_pixel_y = sprite.y > 0 ? sprite.y : 0;
     int16_t end_pixel_y = sprite.y + sprite.height;
-    if (end_pixel_y < 0) {
+    if (end_pixel_y <= 0) {
         return;
     } else if (end_pixel_y >= LCD_ROWS) {
         end_pixel_y = LCD_ROWS;
     }
-    data_u1s_t display_iterator;
-    data_u2s_t sprite_iterator;
     for (int16_t pixel_y = start_pixel_y; pixel_y < end_pixel_y; ++pixel_y) {
+        data_u1s_t display_iterator;
         data_u1s_initialize(&display_iterator, pixel_y * ROW_STRIDE + start_pixel_x);
+        data_u2s_t sprite_iterator;
         data_u2s_initialize(&sprite_iterator, 
-                (pixel_y - sprite.y) * sprite.width / 4
+                (pixel_y - sprite.y) * sprite.width
             +   (start_pixel_x - sprite.x)
         );
         for (int16_t pixel_x = start_pixel_x; pixel_x < end_pixel_x; ++pixel_x) {
+            // TODO: Remove:
+            if (buttons.pushed & kButtonA) {
+                playdate->system->logToConsole("(%d, %d) pixel, u2 offset: (%d, %d), display offset: (%d, %d)",
+                    pixel_x, pixel_y, sprite_iterator.byte_offset, sprite_iterator.bit_offset,
+                    display_iterator.byte_offset, display_iterator.bit_offset);
+            }
             int u2 = data_u2s_get_and_increment(&sprite_iterator, sprite.data2);
 
             switch (u2) {
