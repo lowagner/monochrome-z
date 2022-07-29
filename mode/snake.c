@@ -301,14 +301,8 @@ static void snake_game_loop() {
         return;
     }
     // actual game playing:
-    int x_axis = (
-            ( (buttons.current & kButtonLeft) ? -1 : 0 )
-        +   ( (buttons.current & kButtonRight) ? +1 : 0 )
-    );
-    int y_axis = (
-            ( (buttons.current & kButtonUp) ? -1 : 0 )
-        +   ( (buttons.current & kButtonDown) ? +1 : 0 )
-    );
+    int x_axis, y_axis;
+    buttons_axis_current(&x_axis, &y_axis);
     if (x_axis && (snake.state.head.direction & 1) == 1) {
         // snake was traveling in the y direction, so we can switch to the x direction:
         snake.state.desired_direction = -x_axis + 1;

@@ -24,3 +24,6 @@ void buttons_update();
 
 // you should call this yourself if you want to handle buttons being held when dpad is pushed.
 void buttons_special_update();
+
+void buttons_axis_current(int *x_axis, int *y_axis);
+void buttons_axis_pushed(int *x_axis, int *y_axis);

@@ -1,5 +1,7 @@
 #include "buttons.h"
 
+static inline void buttons_axis(PDButtons which_buttons, int *x_axis, int *y_axis);
+
 struct buttons buttons = {
     .current = 0,
     .pushed = 0,
@@ -46,4 +48,23 @@ void buttons_special_update_button(
             *special = button;
         }
     }
+}
+
+void buttons_axis_current(int *x_axis, int *y_axis) {
+    buttons_axis(buttons.current, x_axis, y_axis);
+}
+
+void buttons_axis_pushed(int *x_axis, int *y_axis) {
+    buttons_axis(buttons.pushed, x_axis, y_axis);
+}
+
+static inline void buttons_axis(PDButtons which_buttons, int *x_axis, int *y_axis) {
+    *x_axis = (
+            ( (which_buttons & kButtonLeft) ? -1 : 0 )
+        +   ( (which_buttons & kButtonRight) ? +1 : 0 )
+    );
+    *y_axis = (
+            ( (which_buttons & kButtonUp) ? -1 : 0 )
+        +   ( (which_buttons & kButtonDown) ? +1 : 0 )
+    );
 }
