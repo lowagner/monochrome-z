@@ -6,6 +6,7 @@
 #include "../library/sprite.h"
 
 static void map_editor_initialize_next();
+static void map_editor_move_sprites();
 
 map_editor_t map_editor = {
     .map = {
@@ -59,37 +60,41 @@ void map_editor_update(display_slice_t slice) {
         --map_editor.initialization;
     } else {
         sprite_pre_move_area_check();
-        int x_axis, y_axis;
-        buttons_axis_pushed(&x_axis, &y_axis);
-        map_editor.drawing.cursor.x += x_axis;
-        if (map_editor.drawing.cursor.x < 0) {
-            // TODO: switch rooms
-            map_editor.drawing.cursor.x = 0;
-        } else if (map_editor.drawing.cursor.x >= ROOM_WIDTH_IN_TILES) {
-            // TODO: switch rooms
-            map_editor.drawing.cursor.x = ROOM_WIDTH_IN_TILES - 1;
-        }
-        map_editor.drawing.cursor.y += y_axis;
-        if (map_editor.drawing.cursor.y < 0) {
-            // TODO: switch rooms
-            map_editor.drawing.cursor.y = 0;
-        } else if (map_editor.drawing.cursor.y >= ROOM_HEIGHT_IN_TILES) {
-            // TODO: switch rooms
-            map_editor.drawing.cursor.y = ROOM_HEIGHT_IN_TILES - 1;
-        }
-        if (x_axis || y_axis) {
-            playdate->system->logToConsole(
-                "map cursor position (%d, %d)",
-                map_editor.drawing.cursor.x,
-                map_editor.drawing.cursor.y
-            );
-        }
-        map_editor.drawing.cursor.sprite->display.x = 6 + 16 * map_editor.drawing.cursor.x;
-        map_editor.drawing.cursor.sprite->display.y = 6 + 16 * map_editor.drawing.cursor.y;
+        map_editor_move_sprites();
         const uint8_t *redraw_areas = sprite_post_move_area_check();
         room_draw_partial(&map_editor.room, redraw_areas);
         sprite_draw();
     }
+}
+
+static void map_editor_move_sprites() {
+    int x_axis, y_axis;
+    buttons_axis_pushed(&x_axis, &y_axis);
+    map_editor.drawing.cursor.x += x_axis;
+    if (map_editor.drawing.cursor.x < 0) {
+        // TODO: switch rooms
+        map_editor.drawing.cursor.x = 0;
+    } else if (map_editor.drawing.cursor.x >= ROOM_WIDTH_IN_TILES) {
+        // TODO: switch rooms
+        map_editor.drawing.cursor.x = ROOM_WIDTH_IN_TILES - 1;
+    }
+    map_editor.drawing.cursor.y += y_axis;
+    if (map_editor.drawing.cursor.y < 0) {
+        // TODO: switch rooms
+        map_editor.drawing.cursor.y = 0;
+    } else if (map_editor.drawing.cursor.y >= ROOM_HEIGHT_IN_TILES) {
+        // TODO: switch rooms
+        map_editor.drawing.cursor.y = ROOM_HEIGHT_IN_TILES - 1;
+    }
+    if (x_axis || y_axis) {
+        playdate->system->logToConsole(
+            "map cursor position (%d, %d)",
+            map_editor.drawing.cursor.x,
+            map_editor.drawing.cursor.y
+        );
+    }
+    map_editor.drawing.cursor.sprite->display.x = 6 + 16 * map_editor.drawing.cursor.x;
+    map_editor.drawing.cursor.sprite->display.y = 6 + 16 * map_editor.drawing.cursor.y;
 }
 
 static void map_editor_initialize_next() {
