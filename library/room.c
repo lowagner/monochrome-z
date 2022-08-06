@@ -12,26 +12,26 @@ void room_draw_partial(const room_t *room, const uint8_t *redraw_areas) {
             continue;
         }
         data_u1s_t redraw_u1s;
-        data_u1s_initialize(&redraw_u1s, check_byte);
+        data_u1s_initialize(&redraw_u1s, 8 * check_byte);
         for (int check_bit = 0; check_bit < 8; ++check_bit) {
-            int redraw_area = data_u1s_get(&redraw_u1s, redraw_areas);
+            int redraw_area = data_u1s_get_and_increment(&redraw_u1s, redraw_areas);
             if (!redraw_area) {
                 continue;
             }
-            int area_index = 8 * check_byte + check_bit;
-            int area_y_over_16 = area_index / (LCD_COLUMNS / 16);
-            int area_x_over_16 = area_index % (LCD_COLUMNS / 16);
+            int onscreen_index = 8 * check_byte + check_bit;
+            int onscreen_y_over_16 = onscreen_index / (LCD_COLUMNS / 16);
+            int onscreen_x_over_16 = onscreen_index % (LCD_COLUMNS / 16);
             // if we allow more granular tile locations, we might need to redraw
             // multiple tiles here.  as we have it, though, we can get away with
             // pinpointing the exact tile we need to redraw.
-            int tile_i = area_x_over_16 - room->x_offset_over_16;
-            int tile_j = area_y_over_16 - room->y_offset_over_16;
+            int tile_i = onscreen_x_over_16 - room->x_offset_over_16;
+            int tile_j = onscreen_y_over_16 - room->y_offset_over_16;
             display_tile_draw($(display_tile) {
                 .data1 = tiles[room->tile.data[
                         room->tile.offset + room->tile.row_stride * tile_j + tile_i
                 ]].data1,
-                .x_over_8 = area_x_over_16 * 2,
-                .y = area_y_over_16 * 16,
+                .x_over_8 = onscreen_x_over_16 * 2,
+                .y = onscreen_y_over_16 * 16,
             });
         }
     }

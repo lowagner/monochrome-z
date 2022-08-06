@@ -7,7 +7,6 @@
 
 #ifndef NDEBUG
 #include "error.h"
-#include "buttons.h" // TODO: REMOVE
 uint8_t test_display_buffer[ROW_STRIDE * LCD_ROWS];
 #endif
 
