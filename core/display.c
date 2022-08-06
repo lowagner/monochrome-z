@@ -325,19 +325,13 @@ void display_sprite_draw(display_sprite_t sprite) {
     }
     for (int16_t pixel_y = start_pixel_y; pixel_y < end_pixel_y; ++pixel_y) {
         data_u1s_t display_iterator;
-        data_u1s_initialize(&display_iterator, pixel_y * ROW_STRIDE + start_pixel_x);
+        data_u1s_initialize(&display_iterator, pixel_y * ROW_STRIDE * 8 + start_pixel_x);
         data_u2s_t sprite_iterator;
         data_u2s_initialize(&sprite_iterator, 
                 (pixel_y - sprite.y) * sprite.width
             +   (start_pixel_x - sprite.x)
         );
         for (int16_t pixel_x = start_pixel_x; pixel_x < end_pixel_x; ++pixel_x) {
-            // TODO: Remove:
-            if (buttons.pushed & kButtonA) {
-                playdate->system->logToConsole("(%d, %d) pixel, u2 offset: (%d, %d), display offset: (%d, %d)",
-                    pixel_x, pixel_y, sprite_iterator.byte_offset, sprite_iterator.bit_offset,
-                    display_iterator.byte_offset, display_iterator.bit_offset);
-            }
             int u2 = data_u2s_get_and_increment(&sprite_iterator, sprite.data2);
 
             switch (u2) {
@@ -363,6 +357,7 @@ void display_sprite_draw(display_sprite_t sprite) {
 #ifndef NDEBUG
 void test__core__display() {
     uint8_t test_tile_data[16 * 2] = {0};
+    uint8_t test_sprite_data[256] = {0};
     TEST(
         uint8_t clear_color = 123;
         uint8_t display_color = ~clear_color; // inverted
@@ -493,6 +488,58 @@ void test__core__display() {
             );
         },
         "%s: can draw a tile", AT
+    );
+
+    TEST(
+        const uint8_t *display_buffer = display();
+        display_slice_fill_alternating(85, 170, $(display_slice){.start_row = 0, .end_row = LCD_ROWS});
+        data_u2s_t u2s;
+        data_u2s_initialize(&u2s, 0);
+        for (int j = 0; j < 5; ++j)
+        for (int i = 0; i < 12; ++i) {
+            if (i % 11 == 0 && j % 4 == 0) {
+                // corners:
+                data_u2s_set_and_increment(&u2s, test_sprite_data, kDisplaySpritePixelSkip);
+            } else if (j % 4 == 0) {
+                // top and bottom:
+                data_u2s_set_and_increment(&u2s, test_sprite_data, kDisplaySpritePixelFlip);
+            } else if (i % 11 == 0) {
+                // left and right:
+                data_u2s_set_and_increment(&u2s, test_sprite_data, kDisplaySpritePixelOn);
+            } else {
+                // middle:
+                data_u2s_set_and_increment(&u2s, test_sprite_data, kDisplaySpritePixelOff);
+            }
+        }
+        display_sprite_draw($(display_sprite){
+            .data2 = test_sprite_data,
+            .x = 7,
+            .y = 2,
+            .width = 12,
+            .height = 5,
+        });
+        const uint8_t *data = test_tile_data;
+        for (int y = 2 - 1; y < 2 + 5 + 1; ++y)
+        for (int x = 7 - 1; x < 7 + 12 + 1; ++x) {
+            TEST(
+                EXPECT_INT_EQUAL_LOGGED(
+                    display_pixel_collision(x, y),
+                    !(
+                        y >= 2 && y < 2+5 && x >= 7 && x < 7+12     // inside sprite
+                        &&  !((y == 2 || y == 6) && (x == 7 || x == 18)) // not sprite corners
+                    )
+                ?   (x + y) % 2     // bg is pixel checkerboard
+                :   (y == 2 || y == 6)  // top and bottom
+                ?   (x + y + 1) % 2 // flip bg pixel
+                :   (x == 7 || x == 18) // left and right
+                ?   1   // on
+                :   0   // off inside
+                ),
+                "at display(x = %d, y = %d)",
+                x, y
+            );
+        },
+        "%s: can draw a sprite", AT
     );
 }
 #endif
