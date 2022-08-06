@@ -126,12 +126,8 @@ static inline void sprite_area_check_all() {
     }
 }
 
-void sprite_pre_move_area_check() {
+const uint8_t *sprite_pre_move_redraw_areas() {
     memset(sprite_redraw_areas, 0, sizeof(sprite_redraw_areas));    
-    sprite_area_check_all();
-}
-
-const uint8_t *sprite_post_move_area_check() {
     sprite_area_check_all();
     return sprite_redraw_areas;
 }

@@ -36,12 +36,10 @@ sprite_t *sprite_add(display_sprite_t display_data);
 void sprite_remove(sprite_t *sprite);
 // calculates where sprites currently are in order to calculate areas that they might leave
 // (and those areas will need to be redrawn).
-void sprite_pre_move_area_check();
-// calculates where sprites currently are in order to calculate areas to redraw before drawing sprites.
-// NOTE: use after calling sprite_pre_move_area_check() first!
 // returns a pointer which you should use with `data_u1s` to iterate over row by row,
 // 16x16 area chunks at a time.  you should redraw any scenery/areas in those grids,
 // then call sprite_draw
-const uint8_t *sprite_post_move_area_check();
+const uint8_t *sprite_pre_move_redraw_areas();
 // draws all sprites that have been added, in z-order (based on sprite.display.z):
+// please call sprite_pre_move_redraw_areas first, then move sprites, then call this:
 void sprite_draw();

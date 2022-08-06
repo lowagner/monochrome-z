@@ -59,9 +59,8 @@ void map_editor_update(display_slice_t slice) {
         map_editor_initialize_next();
         --map_editor.initialization;
     } else {
-        sprite_pre_move_area_check();
+        const uint8_t *redraw_areas = sprite_pre_move_redraw_areas();
         map_editor_move_sprites();
-        const uint8_t *redraw_areas = sprite_post_move_area_check();
         room_draw_partial(&map_editor.room, redraw_areas);
         sprite_draw();
     }
