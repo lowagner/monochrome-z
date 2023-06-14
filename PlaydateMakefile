@@ -32,6 +32,9 @@ UASRC =
 # see https://devforum.play.date/t/not-using-udefs-in-makefile-rule-objdir-pdex-dylib-ext-objdir/7060
 UDEFS = -DPD_PROJECT_MODES=../${PD_PROJECT_NAME}/src/modes.h
 
+# TODO! NOTE! you may need --specs=nosys.specs in the buildsupport/common.mk file as well:
+# see https://devforum.play.date/t/undefined-reference-to-exit-and-friends/7263
+
 # Define ASM defines here
 UADEFS = 
 
