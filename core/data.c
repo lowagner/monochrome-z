@@ -63,7 +63,7 @@ void data_u1s_fill(data_u1s_t *u1s, uint8_t *data, int length_bits) {
     // etc., so delta bits is normally 1 more than bit_offset:
     int delta_to_byte_boundary = (u1s->bit_offset + 1) & 7;
     if (delta_to_byte_boundary == 0) {
-        continue_filling_bits_from_full_byte:
+        continue_filling_bits_from_full_byte:;
         // u1s->bit_offset == 7, so we're at a byte boundary and can start filling here:
         int length_bytes = length_bits / 8;
         length_bits = length_bits % 8;
