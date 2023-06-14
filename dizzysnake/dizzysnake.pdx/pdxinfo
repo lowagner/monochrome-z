@@ -1,7 +1,7 @@
 pdxversion=11200
-buildtime=709277012
+buildtime=709277013
 name=dizzysnake
 author=lowagner
 description=Watch out a snake !?
 bundleID=com.patchsoul.dizzysnake
-version=0.5
+version=0.6
